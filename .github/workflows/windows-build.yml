@@ -1,10 +1,11 @@
 # Windows build (MSYS2 CLANG64) with the CUSA10209 1.00 cheat patch.
 # Run by hand (Actions > Windows Build > Run workflow): the packaged ZIP
 # is kept as a workflow artifact; nothing is published, tagged or released.
-# The fork must contain asia100-cheats.patch at the repo root (the
-# CUSA10209 1.00 cheat patch, based on upstream a3e887c). The workflow
-# applies it before building and fails clearly if it is missing or does
-# not apply.
+# The fork must contain these two patches at the repo root (both based on
+# upstream a3e887c): asia100-cheats.patch (the CUSA10209 1.00 cheat patch)
+# and sirit-cstdlib.patch (adds the missing <cstdlib> include that sirit
+# needs with newer libc++). The workflow applies them before building and
+# fails clearly if one is missing or does not apply.
 name: Windows Build
 
 on:
@@ -24,16 +25,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Apply CUSA10209 cheat patch
+      - name: Apply patches
         shell: pwsh
         run: |
-          if (-not (Test-Path -LiteralPath 'asia100-cheats.patch')) {
-            throw 'asia100-cheats.patch not found at the repo root. Add it to the fork before running this workflow.'
+          foreach ($patch in @('asia100-cheats.patch', 'sirit-cstdlib.patch')) {
+            if (-not (Test-Path -LiteralPath $patch)) {
+              throw "$patch not found at the repo root. Add it to the fork before running this workflow."
+            }
+            git apply --check $patch
+            if ($LASTEXITCODE -ne 0) { throw "$patch does not apply to this checkout (both patches are based on upstream a3e887c)." }
+            git apply $patch
+            if ($LASTEXITCODE -ne 0) { throw "git apply failed for $patch." }
           }
-          git apply --check asia100-cheats.patch
-          if ($LASTEXITCODE -ne 0) { throw 'asia100-cheats.patch does not apply to this checkout (it is based on upstream a3e887c).' }
-          git apply asia100-cheats.patch
-          if ($LASTEXITCODE -ne 0) { throw 'git apply failed.' }
 
       - uses: msys2/setup-msys2@v2
         with:
