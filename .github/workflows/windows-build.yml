@@ -1,11 +1,13 @@
 # Windows build (MSYS2 CLANG64) with the CUSA10209 1.00 cheat patch.
 # Run by hand (Actions > Windows Build > Run workflow): the packaged ZIP
 # is kept as a workflow artifact; nothing is published, tagged or released.
-# The fork must contain these two patches at the repo root (both based on
-# upstream a3e887c): asia100-cheats.patch (the CUSA10209 1.00 cheat patch)
-# and sirit-cstdlib.patch (adds the missing <cstdlib> include that sirit
-# needs with newer libc++). The workflow applies them before building and
-# fails clearly if one is missing or does not apply.
+# The fork must contain these three patches at the repo root (all based on
+# upstream a3e887c): asia100-cheats.patch (the CUSA10209 1.00 cheat patch),
+# sirit-cstdlib.patch (adds the missing <cstdlib> include that sirit needs
+# with newer libc++), and runtime-services-unused.patch (drops the dead
+# common_initialized variable that -Werror rejects on Windows). The workflow
+# applies them before building and fails clearly if one is missing or does
+# not apply.
 name: Windows Build
 
 on:
@@ -28,7 +30,7 @@ jobs:
       - name: Apply patches
         shell: pwsh
         run: |
-          foreach ($patch in @('asia100-cheats.patch', 'sirit-cstdlib.patch')) {
+          foreach ($patch in @('asia100-cheats.patch', 'sirit-cstdlib.patch', 'runtime-services-unused.patch')) {
             if (-not (Test-Path -LiteralPath $patch)) {
               throw "$patch not found at the repo root. Add it to the fork before running this workflow."
             }
