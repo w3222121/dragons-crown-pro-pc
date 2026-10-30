@@ -1,5 +1,5 @@
 diff --git a/docs/CHEATS.md b/docs/CHEATS.md
-index e10ef94..fe62863 100644
+index e10ef94..00210e2 100644
 --- a/docs/CHEATS.md
 +++ b/docs/CHEATS.md
 @@ -25,7 +25,7 @@ While it is open the runtime reads neutral input for every pad and the keyboard
@@ -7,9 +7,18 @@ index e10ef94..fe62863 100644
  ## Native hooks
  
 -The game runs as native x86-64 code from the loaded image. `guest_hook.c` writes nothing to `eboot.bin`: before the image is made executable it checks the image against the supported version (size 0x11f8060, entry 0x54c690, the boot image built from the eboot with SHA-256 `f9bff150c4c28507096e7e143a07492063ed89bf05ac6cb995a55a0946e3508a`, which the launcher's game file check also requires), then each site's original bytes, length and overlap. Every hook that passes becomes a `jmp` to a stub placed after the image, which saves all registers, calls the handler, restores them (the handler may change them), runs the replaced instructions and jumps back. A hook whose bytes do not match is skipped on its own with a line in the log (`Cheats: hook 'x' not installed, ...`) and the others still install; a wrong image installs none. The game runs either way.
-+The game runs as native x86-64 code from the loaded image. `guest_hook.c` writes nothing to `eboot.bin`: before the image is made executable it checks the image against the supported version (the US 1.00 image: size 0x11f8060, entry 0x54c690, the boot image built from the eboot with SHA-256 `f9bff150c4c28507096e7e143a07492063ed89bf05ac6cb995a55a0946e3508a`; the Asia/Hong Kong 1.00 image: size 0x1238060, entry 0x54a790, the boot image built from the eboot with SHA-256 `d37cbc39d84524dd38b818a18bba26ec556bb13e075c493fc927163fec8d039b`; the launcher's game file check also requires the eboot hash), then each site's original bytes, length and overlap. The hook table and the game functions are picked per image: the Asia/Hong Kong 1.00 table holds 17 of the 25 sites (damage, use mana, skill points, player tick, lives, walk speed, the ten gold stores and skill budget) and its game functions are the level group, the refill group and the gold group; the mana drain, arrows, durability, experience and skill-use sites and the equipment functions have no verified offset on that image yet, so those cheats install nothing there instead of a guessed site. Three Asia/Hong Kong gold sites (beggar, base, inn 2) and the refill function were picked by order and regional shift among two byte matches each and still need in-game confirmation. The table below lists the US 1.00 offsets; the Asia/Hong Kong 1.00 offsets are in `src/cheat_hooks.cpp` (`HooksAsia100`). Every hook that passes becomes a `jmp` to a stub placed after the image, which saves all registers, calls the handler, restores them (the handler may change them), runs the replaced instructions and jumps back. A hook whose bytes do not match is skipped on its own with a line in the log (`Cheats: hook 'x' not installed, ...`) and the others still install; a wrong image installs none. The game runs either way.
++The game runs as native x86-64 code from the loaded image. `guest_hook.c` writes nothing to `eboot.bin`: before the image is made executable it checks the image against the supported version (the US 1.00 image: size 0x11f8060, entry 0x54c690, the boot image built from the eboot with SHA-256 `f9bff150c4c28507096e7e143a07492063ed89bf05ac6cb995a55a0946e3508a`; the Asia/Hong Kong 1.00 image: size 0x1238060, entry 0x54a790, the boot image built from the eboot with SHA-256 `d37cbc39d84524dd38b818a18bba26ec556bb13e075c493fc927163fec8d039b`; the launcher's game file check also requires the eboot hash), then each site's original bytes, length and overlap. The hook table and the game functions are picked per image: the Asia/Hong Kong 1.00 table holds 21 of the 25 sites (damage, use mana, skill points, player tick, lives, walk speed, the ten gold stores, skill budget and the four skill-use sites) and its game functions are the level group, the refill group and the gold group; the mana drain, arrows, durability and experience sites and the equipment functions have no verified offset on that image yet, so those cheats install nothing there instead of a guessed site. Three Asia/Hong Kong gold sites (beggar, base, inn 2) and the refill function were picked by order and regional shift among two byte matches each and still need in-game confirmation. The table below lists the US 1.00 offsets; the Asia/Hong Kong 1.00 offsets are in `src/cheat_hooks.cpp` (`HooksAsia100`). Every hook that passes becomes a `jmp` to a stub placed after the image, which saves all registers, calls the handler, restores them (the handler may change them), runs the replaced instructions and jumps back. A hook whose bytes do not match is skipped on its own with a line in the log (`Cheats: hook 'x' not installed, ...`) and the others still install; a wrong image installs none. The game runs either way.
  
  All offsets are image offsets, the same as the eboot offsets cheat tools use. Every hook returns at once when its cheat is Off, so the game runs its own code.
+ 
+@@ -96,7 +96,7 @@ Skill points are an int16 at `+0x24` of the player's save record (record 0 is Pl
+ 
+ ### Infinite Skill Uses
+ 
+-Equipped skill items keep a byte count at `+0x4c` of their item record. The count is decremented in one function, `0x20450`, which has four call sites in two paths. The skill-item use path (`0x1af070`) finds an item by effect id and handles only the Elf's two skill effects (`0x1d9`, `0x1da`). Every other skill item, the Dwarf's Bomb Satchel and its two siblings (effects `0x1d6` to `0x1d8`) among them, is counted down by the equipment wear function (`0x225ce0`), which skips those two effects. Four hooks sit on the four decrement calls and skip them for Player 1 when the item still has at least one use; on the wear function's two sites the item must also pass the game's own skill-item test (`0x206b0`: a skill effect `0x1d1` to `0x1f8` as the first effect), so gear and consumables are not touched. The skill action, animation, mana cost and cooldown are unchanged. A skill with 0 uses is not refilled and keeps the game's own empty handling. Players 2 to 4 and enemies are not affected. The recharge to the maximum on returning to town and at stage change (`0x205d0`, `0x1fa40`) is untouched.
++Equipped skill items keep a byte count at `+0x4c` of their item record. The count is decremented in one function, `0x20450`, which has four call sites in two paths. The skill-item use path (`0x1af070`) finds an item by effect id and handles only the Elf's two skill effects (`0x1d9`, `0x1da`). Every other skill item, the Dwarf's Bomb Satchel and its two siblings (effects `0x1d6` to `0x1d8`) among them, is counted down by the equipment wear function (`0x225ce0`), which skips those two effects. Four hooks sit on the four decrement calls and skip them for Player 1 when the item still has at least one use; on the wear function's two sites the item must also pass the game's own skill-item test (`0x206b0`: a skill effect `0x1d1` to `0x1f8` as the first effect), so gear and consumables are not touched. The skill action, animation, mana cost and cooldown are unchanged. A skill with 0 uses is not refilled and keeps the game's own empty handling. Players 2 to 4 and enemies are not affected. The recharge to the maximum on returning to town and at stage change (`0x205d0`, `0x1fa40`) is untouched. On the Asia/Hong Kong 1.00 image the decrement function is `0x203a0`, the skill-item use function `0x1ae790` and the equipment wear function `0x225400`; the four sites are `0x1ae7fc`, `0x1ae84a`, `0x2256b0` and `0x2256d1`.
+ 
+ ### Add 100 Skill Points
  
 @@ -136,7 +136,7 @@ An AI party ally has the same player category, a valid player class, a party slo
  
@@ -21,7 +30,7 @@ index e10ef94..fe62863 100644
  ## Not covered
  
 diff --git a/docs/LAUNCHER.md b/docs/LAUNCHER.md
-index 09e5eec..3ad32f0 100644
+index 09e5eec..4525908 100644
 --- a/docs/LAUNCHER.md
 +++ b/docs/LAUNCHER.md
 @@ -376,8 +376,10 @@ rows in this order: **Infinite Health**, **Infinite Ally Health**, **Infinite Ma
@@ -32,7 +41,7 @@ index 09e5eec..3ad32f0 100644
 -the menu show them as unavailable. All are ordinary saved settings, Off by default: Save and Play keep them, Reset all settings puts
 +Cheats work on the CUSA10454 1.00 (US) and CUSA10209 1.00 (Asia/Hong Kong) builds; on the USA 1.01, Japanese and
 +Asia/Hong Kong 1.02 builds the page and the menu show them as unavailable. On the Asia/Hong Kong 1.00 build some
-+cheats install nothing yet (Infinite Skill Uses, Experience Multiplier, Infinite Durability and the sustained mana
++cheats install nothing yet (Experience Multiplier, Infinite Durability and the sustained mana
 +drain); see [CHEATS.md](CHEATS.md). All are ordinary saved settings, Off by default: Save and Play keep them, Reset all settings puts
  them back to Off. The saved values are the start of every game session; the F10 menu changes the running session only
  and never writes them. The hooks, the menu and Player 1 targeting are in [CHEATS.md](CHEATS.md).
@@ -51,10 +60,10 @@ index 04d9f9f..b55f823 100644
          false,
          true,
 diff --git a/src/cheat_hooks.cpp b/src/cheat_hooks.cpp
-index 292d746..c600bbd 100644
+index 292d746..16622b8 100644
 --- a/src/cheat_hooks.cpp
 +++ b/src/cheat_hooks.cpp
-@@ -626,6 +626,37 @@ std::span<const GuestHook> Hooks() {
+@@ -626,6 +626,43 @@ std::span<const GuestHook> Hooks() {
      return hooks;
  }
  
@@ -85,6 +94,12 @@ index 292d746..c600bbd 100644
 +        {"gold equip", 0x4ca6ca, 6, {0x89, 0x82, 0x38, 0xf2, 0x0a, 0x00}, GoldStoreHook<&GuestRegs::rdx, &GuestRegs::rax>},
 +        {"skill budget", 0x8a374, 12, {0x8b, 0x5d, 0xa4, 0x45, 0x01, 0xf4, 0x41, 0x01, 0xdd, 0x45, 0x29, 0xec},
 +         SkillBudgetHook},
++        // Verified on the real CUSA10209 1.00 image: the four decrement calls of the shared
++        // skill-item count function 0x203a0 (US 0x20450, -0x8e0), same structure as the US table.
++        {"skill use", 0x1ae7fc, 5, {0xe8, 0x9f, 0x1b, 0xe7, 0xff}, SkillUseHook},
++        {"skill use mirror", 0x1ae84a, 5, {0xe9, 0x51, 0x1b, 0xe7, 0xff}, SkillUseHook},
++        {"skill item wear", 0x2256b0, 5, {0xe8, 0xeb, 0xac, 0xdf, 0xff}, SkillItemWearHook},
++        {"skill item wear mirror", 0x2256d1, 5, {0xe8, 0xca, 0xac, 0xdf, 0xff}, SkillItemWearHook},
 +    };
 +    return hooks;
 +}
@@ -92,7 +107,7 @@ index 292d746..c600bbd 100644
  } // namespace dcp::cheats
  
  namespace {
-@@ -670,9 +701,22 @@ constexpr uint8_t kEquipmentItemPrologue[] = {0x85, 0xf6, 0x78, 0x3b};
+@@ -670,9 +707,22 @@ constexpr uint8_t kEquipmentItemPrologue[] = {0x85, 0xf6, 0x78, 0x3b};
  constexpr uint8_t kIsGearPrologue[] = {0x55, 0x48, 0x89, 0xe5, 0x41, 0x56, 0x53, 0x48, 0x89, 0xfb};
  constexpr uint8_t kSetDurabilityPrologue[] = {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53};
  
@@ -118,7 +133,7 @@ index 292d746..c600bbd 100644
  }
  
  uint64_t GameContext(uint64_t unit) {
-@@ -704,15 +748,87 @@ uint64_t GUEST_HOOK_ABI GameSaveRecord(uint64_t unit) {
+@@ -704,15 +754,87 @@ uint64_t GUEST_HOOK_ABI GameSaveRecord(uint64_t unit) {
  
  } // namespace
  
@@ -210,7 +225,7 @@ index 292d746..c600bbd 100644
          std::printf("Cheats: unavailable, not the supported game image\n");
          return 0;
      }
-@@ -724,7 +840,7 @@ extern "C" int runtime_cheat_hooks_install(uint8_t* image, uint64_t size, uint64
+@@ -724,7 +846,7 @@ extern "C" int runtime_cheat_hooks_install(uint8_t* image, uint64_t size, uint64
      size_t installed = 0;
      for (size_t i = 0; i < hooks.size(); ++i) {
          size_t bad = 0;
@@ -219,7 +234,7 @@ index 292d746..c600bbd 100644
                                                             1, stubs + i * stride, stubs_size - i * stride, &bad);
          if (status == GUEST_HOOK_OK) {
              ++installed;
-@@ -738,49 +854,45 @@ extern "C" int runtime_cheat_hooks_install(uint8_t* image, uint64_t size, uint64
+@@ -738,49 +860,45 @@ extern "C" int runtime_cheat_hooks_install(uint8_t* image, uint64_t size, uint64
      }
      dcp::cheats::GuestFunctions functions;
      functions.save_record = GameSaveRecord;
@@ -375,16 +390,16 @@ index d9fcfa1..b9f4c0d 100644
 +
  } // namespace dcp::cheats
 diff --git a/tests/cheats_tests.cpp b/tests/cheats_tests.cpp
-index 2f32df9..289b990 100644
+index 2f32df9..5c0f465 100644
 --- a/tests/cheats_tests.cpp
 +++ b/tests/cheats_tests.cpp
-@@ -2470,6 +2470,76 @@ void TestHookTable() {
+@@ -2470,6 +2470,74 @@ void TestHookTable() {
      }
  }
  
 +void TestAsia100HookTable() {
 +    const std::span<const GuestHook> hooks = HooksAsia100();
-+    CHECK(hooks.size() == 17);
++    CHECK(hooks.size() == 21);
 +    CHECK(kAsia100Image.size == 0x1238060 && kAsia100Image.entry == 0x54a790);
 +    for (const GuestHook& hook : hooks) {
 +        CHECK(hook.length >= GUEST_HOOK_MIN_LENGTH && hook.length <= GUEST_HOOK_MAX_LENGTH);
@@ -394,9 +409,7 @@ index 2f32df9..289b990 100644
 +    // The sites with no verified offset yet install nothing on this image.
 +    for (const GuestHook& hook : hooks) {
 +        const std::string name(hook.name);
-+        CHECK(name != "mana drain" && name != "arrows" && name != "durability" && name != "experience" &&
-+              name != "skill use" && name != "skill use mirror" && name != "skill item wear" &&
-+              name != "skill item wear mirror");
++        CHECK(name != "mana drain" && name != "arrows" && name != "durability" && name != "experience");
 +    }
 +    CHECK(FindCheatImage(kAsia100Image.size, kAsia100Image.entry) != nullptr);
 +    CHECK(FindCheatImage(kAsia100Image.size, kSupportedImage.entry) == nullptr);
@@ -455,7 +468,7 @@ index 2f32df9..289b990 100644
  // A hook whose bytes do not match is skipped on its own; the others install. A wrong image installs nothing.
  void TestPartialInstall() {
      const std::span<const GuestHook> hooks = Hooks();
-@@ -2535,10 +2605,17 @@ int CheckImage(const char* path) {
+@@ -2535,10 +2603,17 @@ int CheckImage(const char* path) {
          std::printf("truncated boot image\n");
          return 2;
      }
@@ -475,7 +488,7 @@ index 2f32df9..289b990 100644
      std::printf("image 0x%llx entry 0x%llx: %s%s%s\n", static_cast<unsigned long long>(size),
                  static_cast<unsigned long long>(entry), guest_hook_status_text(status), status ? " at " : "",
                  status ? hooks[bad].name : "");
-@@ -2546,45 +2623,34 @@ int CheckImage(const char* path) {
+@@ -2546,45 +2621,34 @@ int CheckImage(const char* path) {
          return 1;
      }
      // The game functions the refills, Add 1,000 Gold and the durability refill call start as the runtime expects.
@@ -541,7 +554,7 @@ index 2f32df9..289b990 100644
              std::printf("the level functions differ at 0x%llx\n", static_cast<unsigned long long>(function.offset));
              return 1;
          }
-@@ -2593,7 +2659,7 @@ int CheckImage(const char* path) {
+@@ -2593,7 +2657,7 @@ int CheckImage(const char* path) {
      const size_t room = hooks.size() * guest_hook_stub_size();
      std::vector<uint8_t> copy(size + room);
      std::memcpy(copy.data(), image.data(), size);
@@ -550,7 +563,7 @@ index 2f32df9..289b990 100644
                              room, &bad) != GUEST_HOOK_OK) {
          std::printf("installation failed\n");
          return 1;
-@@ -3013,6 +3079,7 @@ int main(int argc, char** argv) {
+@@ -3013,6 +3077,7 @@ int main(int argc, char** argv) {
      TestMenuInput();
      TestMovement();
      TestHookTable();
