@@ -1,0 +1,560 @@
+diff --git a/docs/CHEATS.md b/docs/CHEATS.md
+index e10ef94..fe62863 100644
+--- a/docs/CHEATS.md
++++ b/docs/CHEATS.md
+@@ -25,7 +25,7 @@ While it is open the runtime reads neutral input for every pad and the keyboard
+ 
+ ## Native hooks
+ 
+-The game runs as native x86-64 code from the loaded image. `guest_hook.c` writes nothing to `eboot.bin`: before the image is made executable it checks the image against the supported version (size 0x11f8060, entry 0x54c690, the boot image built from the eboot with SHA-256 `f9bff150c4c28507096e7e143a07492063ed89bf05ac6cb995a55a0946e3508a`, which the launcher's game file check also requires), then each site's original bytes, length and overlap. Every hook that passes becomes a `jmp` to a stub placed after the image, which saves all registers, calls the handler, restores them (the handler may change them), runs the replaced instructions and jumps back. A hook whose bytes do not match is skipped on its own with a line in the log (`Cheats: hook 'x' not installed, ...`) and the others still install; a wrong image installs none. The game runs either way.
++The game runs as native x86-64 code from the loaded image. `guest_hook.c` writes nothing to `eboot.bin`: before the image is made executable it checks the image against the supported version (the US 1.00 image: size 0x11f8060, entry 0x54c690, the boot image built from the eboot with SHA-256 `f9bff150c4c28507096e7e143a07492063ed89bf05ac6cb995a55a0946e3508a`; the Asia/Hong Kong 1.00 image: size 0x1238060, entry 0x54a790, the boot image built from the eboot with SHA-256 `d37cbc39d84524dd38b818a18bba26ec556bb13e075c493fc927163fec8d039b`; the launcher's game file check also requires the eboot hash), then each site's original bytes, length and overlap. The hook table and the game functions are picked per image: the Asia/Hong Kong 1.00 table holds 17 of the 25 sites (damage, use mana, skill points, player tick, lives, walk speed, the ten gold stores and skill budget) and its game functions are the level group, the refill group and the gold group; the mana drain, arrows, durability, experience and skill-use sites and the equipment functions have no verified offset on that image yet, so those cheats install nothing there instead of a guessed site. Three Asia/Hong Kong gold sites (beggar, base, inn 2) and the refill function were picked by order and regional shift among two byte matches each and still need in-game confirmation. The table below lists the US 1.00 offsets; the Asia/Hong Kong 1.00 offsets are in `src/cheat_hooks.cpp` (`HooksAsia100`). Every hook that passes becomes a `jmp` to a stub placed after the image, which saves all registers, calls the handler, restores them (the handler may change them), runs the replaced instructions and jumps back. A hook whose bytes do not match is skipped on its own with a line in the log (`Cheats: hook 'x' not installed, ...`) and the others still install; a wrong image installs none. The game runs either way.
+ 
+ All offsets are image offsets, the same as the eboot offsets cheat tools use. Every hook returns at once when its cheat is Off, so the game runs its own code.
+ 
+@@ -136,7 +136,7 @@ An AI party ally has the same player category, a valid player class, a party slo
+ 
+ ## Tests
+ 
+-`tools\test.ps1` builds and runs `dcp-cheats-tests` (the list, the session override, the menu model, the damage, mana and durability rules, the ally health/mana refill, Player 1 against players 2 to 4, AI allies, human-controller exclusion, enemies and NPCs, the one-shot actions including Level Up (+1 Level), the Movement Speed and Experience Multiplier values including 100x clamping, the skill-use count rule, the handlers on synthetic memory, and the hook layer: it executes real stubs, checks register and flag preservation, stack alignment, the early return and every refusal) and the launcher tests (the page order, persistence, migration and reset). `dcp-cheats-tests --check-image build\image\v1.03\boot.bin` checks the hook table and the level-up functions against the real boot image and installs the hook table on a copy, without a window.
++`tools\test.ps1` builds and runs `dcp-cheats-tests` (the list, the session override, the menu model, the damage, mana and durability rules, the ally health/mana refill, Player 1 against players 2 to 4, AI allies, human-controller exclusion, enemies and NPCs, the one-shot actions including Level Up (+1 Level), the Movement Speed and Experience Multiplier values including 100x clamping, the skill-use count rule, the handlers on synthetic memory, and the hook layer: it executes real stubs, checks register and flag preservation, stack alignment, the early return and every refusal) and the launcher tests (the page order, persistence, migration and reset). `dcp-cheats-tests --check-image build\image\v1.03\boot.bin` checks the hook table and the game functions of the image the boot file holds, picked by its size and entry, and installs that table on a copy, without a window.
+ 
+ ## Not covered
+ 
+diff --git a/docs/LAUNCHER.md b/docs/LAUNCHER.md
+index 09e5eec..3ad32f0 100644
+--- a/docs/LAUNCHER.md
++++ b/docs/LAUNCHER.md
+@@ -376,8 +376,10 @@ rows in this order: **Infinite Health**, **Infinite Ally Health**, **Infinite Ma
+ Points**, **Infinite Skill Uses**, **Infinite Gold**, each with its one-line description (`src/dcp_cheats.h`), and
+ below them the **Movement Speed** combo
+ (Off, 2x, 4x) and the **Experience Multiplier** combo (Off, 2x, 5x, 10x, 100x).
+-Cheats work on the CUSA10454 1.00 (US) build only; on the USA 1.01, Japanese and Asia and Hong Kong builds the page and
+-the menu show them as unavailable. All are ordinary saved settings, Off by default: Save and Play keep them, Reset all settings puts
++Cheats work on the CUSA10454 1.00 (US) and CUSA10209 1.00 (Asia/Hong Kong) builds; on the USA 1.01, Japanese and
++Asia/Hong Kong 1.02 builds the page and the menu show them as unavailable. On the Asia/Hong Kong 1.00 build some
++cheats install nothing yet (Infinite Skill Uses, Experience Multiplier, Infinite Durability and the sustained mana
++drain); see [CHEATS.md](CHEATS.md). All are ordinary saved settings, Off by default: Save and Play keep them, Reset all settings puts
+ them back to Off. The saved values are the start of every game session; the F10 menu changes the running session only
+ and never writes them. The hooks, the menu and Player 1 targeting are in [CHEATS.md](CHEATS.md).
+ 
+diff --git a/launcher/game_profile.cpp b/launcher/game_profile.cpp
+index 04d9f9f..b55f823 100644
+--- a/launcher/game_profile.cpp
++++ b/launcher/game_profile.cpp
+@@ -204,7 +204,7 @@ constexpr GameBuild kGameBuilds[] = {
+         {},
+         "CUSA10209 1.00 Asia/Hong Kong",
+         "Asia/Hong Kong",
+-        false,
++        true,
+         false,
+         false,
+         true,
+diff --git a/src/cheat_hooks.cpp b/src/cheat_hooks.cpp
+index 292d746..c600bbd 100644
+--- a/src/cheat_hooks.cpp
++++ b/src/cheat_hooks.cpp
+@@ -626,6 +626,37 @@ std::span<const GuestHook> Hooks() {
+     return hooks;
+ }
+ 
++// The Asia/Hong Kong 1.00 table: the sites with a verified offset on that image. The three gold entries marked
++// candidate were picked by order and regional shift among two byte matches each, not by a unique match, and still
++// need in-game confirmation; the sites with no verified offset yet (mana drain, arrows, durability, experience
++// and the four skill-use decrements) are left out, so those cheats install nothing on that image.
++std::span<const GuestHook> HooksAsia100() {
++    static const GuestHook hooks[] = {
++        {"damage", 0xd7eb3, 6, {0x89, 0x8d, 0xdc, 0xfd, 0xff, 0xff}, HealthDamageHook},
++        {"use mana", 0xd6520, 6, {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57}, ManaCostHook},
++        {"skill points", 0x535eaa, 8, {0x66, 0x44, 0x89, 0xab, 0xc8, 0x00, 0x00, 0x00}, SkillPointsHook},
++        {"player tick", 0x2e9ac0, 6, {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57}, PlayerTickHook},
++        {"lives", 0x2ebe6b, 5, {0xff, 0xc8, 0x83, 0xf8, 0xff}, LivesHook},
++        {"walk speed", 0x2ec3aa, 7, {0x48, 0x8b, 0x5d, 0x80, 0x48, 0x8b, 0x03}, MovementHook},
++        {"gold shop", 0x52c1fb, 8, {0x41, 0x89, 0x8c, 0x24, 0x38, 0xf2, 0x0a, 0x00}, GoldStoreHook<&GuestRegs::r12, &GuestRegs::rcx>},
++        {"gold continue", 0x43c902, 6, {0x89, 0x88, 0x38, 0xf2, 0x0a, 0x00}, GoldStoreHook<&GuestRegs::rax, &GuestRegs::rcx>},
++        {"gold stable", 0x3bbb63, 8, {0x41, 0x89, 0x84, 0x24, 0x38, 0xf2, 0x0a, 0x00}, GoldStoreHook<&GuestRegs::r12, &GuestRegs::rax>},
++        // Candidate: the second of two byte matches, picked by order after gold stable and a matching shift.
++        {"gold beggar", 0x3bf392, 6, {0x89, 0x8a, 0x38, 0xf2, 0x0a, 0x00}, GoldStoreHook<&GuestRegs::rdx, &GuestRegs::rcx>},
++        // Candidate: the second of two byte matches, picked by order before gold inn and a matching shift.
++        {"gold base", 0x3c1890, 7, {0x41, 0x89, 0x8d, 0x38, 0xf2, 0x0a, 0x00}, GoldStoreHook<&GuestRegs::r13, &GuestRegs::rcx>},
++        {"gold inn", 0x3c3199, 7, {0x41, 0x89, 0x85, 0x38, 0xf2, 0x0a, 0x00}, GoldStoreHook<&GuestRegs::r13, &GuestRegs::rax>},
++        // Candidate: the second of two byte matches, picked by order after gold inn and a matching shift.
++        {"gold inn 2", 0x3c371c, 7, {0x41, 0x89, 0x8e, 0x38, 0xf2, 0x0a, 0x00}, GoldStoreHook<&GuestRegs::r14, &GuestRegs::rcx>},
++        {"gold list", 0x4946bd, 7, {0x41, 0x89, 0x96, 0x38, 0xf2, 0x0a, 0x00}, GoldStoreHook<&GuestRegs::r14, &GuestRegs::rdx>},
++        {"gold list 2", 0x49491d, 7, {0x41, 0x89, 0xb6, 0x38, 0xf2, 0x0a, 0x00}, GoldStoreHook<&GuestRegs::r14, &GuestRegs::rsi>},
++        {"gold equip", 0x4ca6ca, 6, {0x89, 0x82, 0x38, 0xf2, 0x0a, 0x00}, GoldStoreHook<&GuestRegs::rdx, &GuestRegs::rax>},
++        {"skill budget", 0x8a374, 12, {0x8b, 0x5d, 0xa4, 0x45, 0x01, 0xf4, 0x41, 0x01, 0xdd, 0x45, 0x29, 0xec},
++         SkillBudgetHook},
++    };
++    return hooks;
++}
++
+ } // namespace dcp::cheats
+ 
+ namespace {
+@@ -670,9 +701,22 @@ constexpr uint8_t kEquipmentItemPrologue[] = {0x85, 0xf6, 0x78, 0x3b};
+ constexpr uint8_t kIsGearPrologue[] = {0x55, 0x48, 0x89, 0xe5, 0x41, 0x56, 0x53, 0x48, 0x89, 0xfb};
+ constexpr uint8_t kSetDurabilityPrologue[] = {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53};
+ 
+-template <size_t N>
+-bool PrologueMatches(const uint8_t* image, uint64_t offset, const uint8_t (&bytes)[N]) {
+-    return std::memcmp(image + offset, bytes, N) == 0;
++// Asia/Hong Kong 1.00 offsets; the prologue bytes are the same as the US ones above.
++constexpr uint64_t kAsia100IsDeadOffset = 0x2812a0;
++constexpr uint64_t kAsia100RefillOffset = 0xe3360; // candidate: see HooksAsia100
++constexpr uint64_t kAsia100GetGoldOffset = 0x43c800;
++constexpr uint64_t kAsia100AddGoldOffset = 0x43c830;
++constexpr uint64_t kAsia100RecordModeOffset = 0x83330;
++constexpr uint64_t kAsia100RecordStageOffset = 0x86730;
++constexpr uint64_t kAsia100MaxLevelOffset = 0x4f360;
++constexpr uint64_t kAsia100LevelEntryOffset = 0x2f9440;
++constexpr uint64_t kAsia100LevelPatternOffset = 0x819f0;
++constexpr uint64_t kAsia100SetLevelOffset = 0x819c0;
++constexpr uint64_t kAsia100WriteStatsOffset = 0x81a10;
++
++bool SiteMatches(const uint8_t* image, const dcp::cheats::GuestFunctionSite& site) {
++    return site.offset != 0 && !site.prologue.empty() &&
++           std::memcmp(image + site.offset, site.prologue.data(), site.prologue.size()) == 0;
+ }
+ 
+ uint64_t GameContext(uint64_t unit) {
+@@ -704,15 +748,87 @@ uint64_t GUEST_HOOK_ABI GameSaveRecord(uint64_t unit) {
+ 
+ } // namespace
+ 
++namespace dcp::cheats {
++
++CheatGuestFunctions FunctionsUs() {
++    return {
++        {kIsDeadOffset, kIsDeadPrologue},
++        {kRefillOffset, kRefillPrologue},
++        {kGetGoldOffset, kGetGoldPrologue},
++        {kAddGoldOffset, kAddGoldPrologue},
++        {kRecordModeOffset, kRecordModePrologue},
++        {kRecordStageOffset, kRecordStagePrologue},
++        {kMaxLevelOffset, kMaxLevelPrologue},
++        {kLevelEntryOffset, kLevelEntryPrologue},
++        {kLevelPatternOffset, kLevelPatternPrologue},
++        {kSetLevelOffset, kSetLevelPrologue},
++        {kWriteStatsOffset, kWriteStatsPrologue},
++        {kEquipmentCountOffset, kEquipmentCountPrologue},
++        {kEquipmentItemOffset, kEquipmentItemPrologue},
++        {kIsGearOffset, kIsGearPrologue},
++        {kSetDurabilityOffset, kSetDurabilityPrologue},
++    };
++}
++
++CheatGuestFunctions FunctionsAsia100() {
++    // The equipment group has no verified function on this image yet; its offsets stay 0 and the install code
++    // leaves the durability refill unset, while the wear protection itself is a separate hook.
++    return {
++        {kAsia100IsDeadOffset, kIsDeadPrologue},
++        {kAsia100RefillOffset, kRefillPrologue}, // candidate: see HooksAsia100
++        {kAsia100GetGoldOffset, kGetGoldPrologue},
++        {kAsia100AddGoldOffset, kAddGoldPrologue},
++        {kAsia100RecordModeOffset, kRecordModePrologue},
++        {kAsia100RecordStageOffset, kRecordStagePrologue},
++        {kAsia100MaxLevelOffset, kMaxLevelPrologue},
++        {kAsia100LevelEntryOffset, kLevelEntryPrologue},
++        {kAsia100LevelPatternOffset, kLevelPatternPrologue},
++        {kAsia100SetLevelOffset, kSetLevelPrologue},
++        {kAsia100WriteStatsOffset, kWriteStatsPrologue},
++        {},
++        {},
++        {},
++        {},
++    };
++}
++
++std::span<const CheatImage> CheatImages() {
++    static const CheatImage images[] = {
++        {kSupportedImage, Hooks(), FunctionsUs()},
++        {kAsia100Image, HooksAsia100(), FunctionsAsia100()},
++    };
++    return images;
++}
++
++const CheatImage* FindCheatImage(uint64_t size, uint64_t entry) {
++    for (const CheatImage& image : CheatImages()) {
++        if (image.id.size == size && image.id.entry == entry) {
++            return &image;
++        }
++    }
++    return nullptr;
++}
++
++} // namespace dcp::cheats
++
+ extern "C" size_t runtime_cheat_hooks_stub_bytes(void) {
+-    return dcp::cheats::Hooks().size() * guest_hook_stub_size();
++    // Sized before the image is known, so it covers the largest table of any supported image.
++    size_t hooks = 0;
++    for (const dcp::cheats::CheatImage& image : dcp::cheats::CheatImages()) {
++        hooks = hooks > image.hooks.size() ? hooks : image.hooks.size();
++    }
++    return hooks * guest_hook_stub_size();
+ }
+ 
+ extern "C" int runtime_cheat_hooks_install(uint8_t* image, uint64_t size, uint64_t entry, uint8_t* stubs,
+                                            size_t stubs_size) {
+-    const std::span<const GuestHook> hooks = dcp::cheats::Hooks();
+-    if (guest_hooks_verify(image, size, entry, &dcp::cheats::kSupportedImage, hooks.data(), 0, nullptr) !=
+-        GUEST_HOOK_OK) {
++    const dcp::cheats::CheatImage* cheat_image = dcp::cheats::FindCheatImage(size, entry);
++    if (cheat_image == nullptr) {
++        std::printf("Cheats: unavailable, not the supported game image\n");
++        return 0;
++    }
++    const std::span<const GuestHook> hooks = cheat_image->hooks;
++    if (guest_hooks_verify(image, size, entry, &cheat_image->id, hooks.data(), 0, nullptr) != GUEST_HOOK_OK) {
+         std::printf("Cheats: unavailable, not the supported game image\n");
+         return 0;
+     }
+@@ -724,7 +840,7 @@ extern "C" int runtime_cheat_hooks_install(uint8_t* image, uint64_t size, uint64
+     size_t installed = 0;
+     for (size_t i = 0; i < hooks.size(); ++i) {
+         size_t bad = 0;
+-        const GuestHookStatus status = guest_hooks_install(image, size, entry, &dcp::cheats::kSupportedImage, &hooks[i],
++        const GuestHookStatus status = guest_hooks_install(image, size, entry, &cheat_image->id, &hooks[i],
+                                                            1, stubs + i * stride, stubs_size - i * stride, &bad);
+         if (status == GUEST_HOOK_OK) {
+             ++installed;
+@@ -738,49 +854,45 @@ extern "C" int runtime_cheat_hooks_install(uint8_t* image, uint64_t size, uint64
+     }
+     dcp::cheats::GuestFunctions functions;
+     functions.save_record = GameSaveRecord;
+-    if (PrologueMatches(image, kRecordModeOffset, kRecordModePrologue) &&
+-        PrologueMatches(image, kRecordStageOffset, kRecordStagePrologue) &&
+-        PrologueMatches(image, kMaxLevelOffset, kMaxLevelPrologue) &&
+-        PrologueMatches(image, kLevelEntryOffset, kLevelEntryPrologue) &&
+-        PrologueMatches(image, kLevelPatternOffset, kLevelPatternPrologue) &&
+-        PrologueMatches(image, kSetLevelOffset, kSetLevelPrologue) &&
+-        PrologueMatches(image, kWriteStatsOffset, kWriteStatsPrologue)) {
+-        functions.record_mode = reinterpret_cast<int32_t(GUEST_HOOK_ABI*)(uint64_t)>(image + kRecordModeOffset);
+-        functions.record_stage = reinterpret_cast<uint8_t(GUEST_HOOK_ABI*)(uint64_t)>(image + kRecordStageOffset);
++    const dcp::cheats::CheatGuestFunctions& fns = cheat_image->functions;
++    if (SiteMatches(image, fns.record_mode) && SiteMatches(image, fns.record_stage) &&
++        SiteMatches(image, fns.max_level) && SiteMatches(image, fns.level_entry) &&
++        SiteMatches(image, fns.level_pattern) && SiteMatches(image, fns.set_level) &&
++        SiteMatches(image, fns.write_stats)) {
++        functions.record_mode = reinterpret_cast<int32_t(GUEST_HOOK_ABI*)(uint64_t)>(image + fns.record_mode.offset);
++        functions.record_stage = reinterpret_cast<uint8_t(GUEST_HOOK_ABI*)(uint64_t)>(image + fns.record_stage.offset);
+         functions.max_level =
+-            reinterpret_cast<int32_t(GUEST_HOOK_ABI*)(int32_t, int32_t, int32_t)>(image + kMaxLevelOffset);
++            reinterpret_cast<int32_t(GUEST_HOOK_ABI*)(int32_t, int32_t, int32_t)>(image + fns.max_level.offset);
+         functions.level_entry =
+-            reinterpret_cast<uint64_t(GUEST_HOOK_ABI*)(int32_t, int32_t)>(image + kLevelEntryOffset);
+-        functions.level_pattern = reinterpret_cast<int32_t(GUEST_HOOK_ABI*)(uint64_t)>(image + kLevelPatternOffset);
+-        functions.set_level = reinterpret_cast<void(GUEST_HOOK_ABI*)(uint64_t, uint32_t)>(image + kSetLevelOffset);
++            reinterpret_cast<uint64_t(GUEST_HOOK_ABI*)(int32_t, int32_t)>(image + fns.level_entry.offset);
++        functions.level_pattern = reinterpret_cast<int32_t(GUEST_HOOK_ABI*)(uint64_t)>(image + fns.level_pattern.offset);
++        functions.set_level = reinterpret_cast<void(GUEST_HOOK_ABI*)(uint64_t, uint32_t)>(image + fns.set_level.offset);
+         functions.write_stats = reinterpret_cast<void(GUEST_HOOK_ABI*)(uint64_t, int32_t, int32_t, int32_t, int32_t)>(
+-            image + kWriteStatsOffset);
++            image + fns.write_stats.offset);
+     } else {
+         std::printf("Cheats: Level Up (+1 Level) not available, the game's level functions differ\n");
+     }
+-    if (PrologueMatches(image, kIsDeadOffset, kIsDeadPrologue) && PrologueMatches(image, kRefillOffset, kRefillPrologue)) {
+-        functions.is_dead = reinterpret_cast<uint8_t(GUEST_HOOK_ABI*)(uint64_t)>(image + kIsDeadOffset);
++    if (SiteMatches(image, fns.is_dead) && SiteMatches(image, fns.refill)) {
++        functions.is_dead = reinterpret_cast<uint8_t(GUEST_HOOK_ABI*)(uint64_t)>(image + fns.is_dead.offset);
+         functions.refill =
+-            reinterpret_cast<void(GUEST_HOOK_ABI*)(uint64_t, uint32_t, uint32_t, uint32_t)>(image + kRefillOffset);
++            reinterpret_cast<void(GUEST_HOOK_ABI*)(uint64_t, uint32_t, uint32_t, uint32_t)>(image + fns.refill.offset);
+     } else {
+         std::printf("Cheats: the Health and Mana refill is not available, the game's fill functions differ\n");
+     }
+-    if (PrologueMatches(image, kGetGoldOffset, kGetGoldPrologue) && PrologueMatches(image, kAddGoldOffset, kAddGoldPrologue)) {
++    if (SiteMatches(image, fns.get_gold) && SiteMatches(image, fns.add_gold)) {
+         functions.gold_context = GameGoldContext;
+-        functions.get_gold = reinterpret_cast<int32_t(GUEST_HOOK_ABI*)(uint64_t)>(image + kGetGoldOffset);
+-        functions.add_gold = reinterpret_cast<void(GUEST_HOOK_ABI*)(uint64_t, int32_t)>(image + kAddGoldOffset);
++        functions.get_gold = reinterpret_cast<int32_t(GUEST_HOOK_ABI*)(uint64_t)>(image + fns.get_gold.offset);
++        functions.add_gold = reinterpret_cast<void(GUEST_HOOK_ABI*)(uint64_t, int32_t)>(image + fns.add_gold.offset);
+     } else {
+         std::printf("Cheats: Add 1,000 Gold not available, the game's gold functions differ\n");
+     }
+-    if (PrologueMatches(image, kEquipmentCountOffset, kEquipmentCountPrologue) &&
+-        PrologueMatches(image, kEquipmentItemOffset, kEquipmentItemPrologue) &&
+-        PrologueMatches(image, kIsGearOffset, kIsGearPrologue) &&
+-        PrologueMatches(image, kSetDurabilityOffset, kSetDurabilityPrologue)) {
+-        functions.equipment_count = reinterpret_cast<uint8_t(GUEST_HOOK_ABI*)(uint64_t)>(image + kEquipmentCountOffset);
+-        functions.equipment_item = reinterpret_cast<uint64_t(GUEST_HOOK_ABI*)(uint64_t, int32_t)>(image + kEquipmentItemOffset);
+-        functions.is_gear = reinterpret_cast<uint8_t(GUEST_HOOK_ABI*)(uint64_t)>(image + kIsGearOffset);
++    if (SiteMatches(image, fns.equipment_count) && SiteMatches(image, fns.equipment_item) &&
++        SiteMatches(image, fns.is_gear) && SiteMatches(image, fns.set_durability)) {
++        functions.equipment_count = reinterpret_cast<uint8_t(GUEST_HOOK_ABI*)(uint64_t)>(image + fns.equipment_count.offset);
++        functions.equipment_item = reinterpret_cast<uint64_t(GUEST_HOOK_ABI*)(uint64_t, int32_t)>(image + fns.equipment_item.offset);
++        functions.is_gear = reinterpret_cast<uint8_t(GUEST_HOOK_ABI*)(uint64_t)>(image + fns.is_gear.offset);
+         functions.set_durability =
+-            reinterpret_cast<void(GUEST_HOOK_ABI*)(uint64_t, int32_t, int32_t)>(image + kSetDurabilityOffset);
++            reinterpret_cast<void(GUEST_HOOK_ABI*)(uint64_t, int32_t, int32_t)>(image + fns.set_durability.offset);
+     } else {
+         std::printf("Cheats: Infinite Durability refill not available, the game's item functions differ\n");
+     }
+diff --git a/src/cheat_hooks.h b/src/cheat_hooks.h
+index d9fcfa1..b9f4c0d 100644
+--- a/src/cheat_hooks.h
++++ b/src/cheat_hooks.h
+@@ -1,4 +1,4 @@
+-// The native hooks behind the cheats, on the loaded v1.03 image. The handlers are exposed for the tests.
++// The native hooks behind the cheats, on the loaded game image. The handlers are exposed for the tests.
+ #pragma once
+ 
+ #include <cstddef>
+@@ -9,8 +9,11 @@
+ 
+ namespace dcp::cheats {
+ 
+-// The one supported image (the boot image built from the eboot with SHA-256 f9bff150...3508a).
++// The supported images: the US 1.00 image (the boot image built from the eboot with SHA-256
++// f9bff150...3508a) and the Asia/Hong Kong 1.00 image (CUSA10209, the boot image built from
++// the eboot with SHA-256 d37cbc39...039b).
+ inline constexpr GuestImageId kSupportedImage{0x11f8060, 0x54c690};
++inline constexpr GuestImageId kAsia100Image{0x1238060, 0x54a790};
+ 
+ void GUEST_HOOK_ABI HealthDamageHook(GuestRegs* regs);
+ void GUEST_HOOK_ABI ManaCostHook(GuestRegs* regs);
+@@ -26,6 +29,47 @@ void GUEST_HOOK_ABI LivesHook(GuestRegs* regs);
+ void GUEST_HOOK_ABI MovementHook(GuestRegs* regs);
+ void GUEST_HOOK_ABI ExperienceHook(GuestRegs* regs);
+ 
++// One game function a refill or a menu action calls: its image offset and the bytes its start must hold.
++// An offset of 0 means the image has no such function; the install code checks a whole group before it uses any
++// of its functions, so a group with a missing or differing function leaves only that feature unavailable.
++struct GuestFunctionSite {
++    uint64_t offset = 0;
++    std::span<const uint8_t> prologue;
++};
++
++// The game functions, grouped as the install code checks them: the level group, the refill group, the gold group
++// and the equipment group.
++struct CheatGuestFunctions {
++    GuestFunctionSite is_dead;
++    GuestFunctionSite refill;
++    GuestFunctionSite get_gold;
++    GuestFunctionSite add_gold;
++    GuestFunctionSite record_mode;
++    GuestFunctionSite record_stage;
++    GuestFunctionSite max_level;
++    GuestFunctionSite level_entry;
++    GuestFunctionSite level_pattern;
++    GuestFunctionSite set_level;
++    GuestFunctionSite write_stats;
++    GuestFunctionSite equipment_count;
++    GuestFunctionSite equipment_item;
++    GuestFunctionSite is_gear;
++    GuestFunctionSite set_durability;
++};
++
++// One supported image: its id, its hook table and its game functions.
++struct CheatImage {
++    GuestImageId id;
++    std::span<const GuestHook> hooks;
++    CheatGuestFunctions functions;
++};
++
++// Every supported image, US first.
++std::span<const CheatImage> CheatImages();
++
++// The supported image with this size and entry, or nullptr.
++const CheatImage* FindCheatImage(uint64_t size, uint64_t entry);
++
+ // The game functions the refills and the menu's actions call; set from the image when the hooks are installed,
+ // replaced in the tests. gold_context is the object AddGold and GetGold take, found from a player's unit; save_record
+ // is that player's save record (Player 1's for slot 0).
+@@ -54,4 +98,9 @@ void SetGuestFunctions(const GuestFunctions& functions);
+ 
+ std::span<const GuestHook> Hooks();
+ 
++// The Asia/Hong Kong 1.00 hook table: the sites with a verified offset on that image. It leaves out the sites
++// with no verified offset yet (mana drain, arrows, durability, experience and the four skill-use decrements),
++// so those cheats install nothing on that image instead of a guessed site.
++std::span<const GuestHook> HooksAsia100();
++
+ } // namespace dcp::cheats
+diff --git a/tests/cheats_tests.cpp b/tests/cheats_tests.cpp
+index 2f32df9..289b990 100644
+--- a/tests/cheats_tests.cpp
++++ b/tests/cheats_tests.cpp
+@@ -2470,6 +2470,76 @@ void TestHookTable() {
+     }
+ }
+ 
++void TestAsia100HookTable() {
++    const std::span<const GuestHook> hooks = HooksAsia100();
++    CHECK(hooks.size() == 17);
++    CHECK(kAsia100Image.size == 0x1238060 && kAsia100Image.entry == 0x54a790);
++    for (const GuestHook& hook : hooks) {
++        CHECK(hook.length >= GUEST_HOOK_MIN_LENGTH && hook.length <= GUEST_HOOK_MAX_LENGTH);
++        CHECK(hook.handler != nullptr && hook.name != nullptr);
++        CHECK(hook.offset + hook.length <= kAsia100Image.size);
++    }
++    // The sites with no verified offset yet install nothing on this image.
++    for (const GuestHook& hook : hooks) {
++        const std::string name(hook.name);
++        CHECK(name != "mana drain" && name != "arrows" && name != "durability" && name != "experience" &&
++              name != "skill use" && name != "skill use mirror" && name != "skill item wear" &&
++              name != "skill item wear mirror");
++    }
++    CHECK(FindCheatImage(kAsia100Image.size, kAsia100Image.entry) != nullptr);
++    CHECK(FindCheatImage(kAsia100Image.size, kSupportedImage.entry) == nullptr);
++    CHECK(FindCheatImage(kSupportedImage.size, kAsia100Image.entry) == nullptr);
++    CHECK(FindCheatImage(0, 0) == nullptr);
++
++    const size_t room = hooks.size() * guest_hook_stub_size();
++    std::vector<uint8_t> memory(kAsia100Image.size + room, 0x90);
++    uint8_t* image = memory.data();
++    for (const GuestHook& hook : hooks) {
++        std::memcpy(image + hook.offset, hook.original, hook.length);
++    }
++    size_t bad = 99;
++    CHECK(guest_hooks_verify(image, kAsia100Image.size, kAsia100Image.entry, &kAsia100Image, hooks.data(),
++                             hooks.size(), &bad) == GUEST_HOOK_OK);
++    CHECK(guest_hooks_verify(image, kAsia100Image.size - 1, kAsia100Image.entry, &kAsia100Image, hooks.data(),
++                             hooks.size(), &bad) == GUEST_HOOK_WRONG_IMAGE);
++    CHECK(guest_hooks_verify(image, kAsia100Image.size, kAsia100Image.entry + 1, &kAsia100Image, hooks.data(),
++                             hooks.size(), &bad) == GUEST_HOOK_WRONG_IMAGE);
++
++    // One wrong byte anywhere in any site: refused, that hook named, nothing written.
++    for (size_t i = 0; i < hooks.size(); ++i) {
++        for (uint8_t at = 0; at < hooks[i].length; ++at) {
++            image[hooks[i].offset + at] ^= 0x01;
++            const std::vector<uint8_t> before(memory);
++            CHECK(guest_hooks_install(image, kAsia100Image.size, kAsia100Image.entry, &kAsia100Image, hooks.data(),
++                                      hooks.size(), image + kAsia100Image.size, room, &bad) == GUEST_HOOK_MISMATCH);
++            CHECK(bad == i);
++            CHECK(before == memory);
++            image[hooks[i].offset + at] ^= 0x01;
++        }
++    }
++    // The sites do not overlap each other.
++    for (size_t i = 0; i < hooks.size(); ++i) {
++        for (size_t j = i + 1; j < hooks.size(); ++j) {
++            CHECK(hooks[i].offset + hooks[i].length <= hooks[j].offset ||
++                  hooks[j].offset + hooks[j].length <= hooks[i].offset);
++        }
++    }
++
++    CHECK(guest_hooks_install(image, kAsia100Image.size, kAsia100Image.entry, &kAsia100Image, hooks.data(),
++                              hooks.size(), image + kAsia100Image.size, room, &bad) == GUEST_HOOK_OK);
++    uint8_t* stubs = image + kAsia100Image.size;
++    for (size_t i = 0; i < hooks.size(); ++i) {
++        const uint8_t* site = image + hooks[i].offset;
++        CHECK(site[0] == 0xe9);
++        int32_t rel;
++        std::memcpy(&rel, site + 1, 4);
++        CHECK(site + 5 + rel == stubs + i * guest_hook_stub_size());
++        for (uint8_t at = 5; at < hooks[i].length; ++at) {
++            CHECK(site[at] == 0x90);
++        }
++    }
++}
++
+ // A hook whose bytes do not match is skipped on its own; the others install. A wrong image installs nothing.
+ void TestPartialInstall() {
+     const std::span<const GuestHook> hooks = Hooks();
+@@ -2535,10 +2605,17 @@ int CheckImage(const char* path) {
+         std::printf("truncated boot image\n");
+         return 2;
+     }
+-    const std::span<const GuestHook> hooks = Hooks();
++    const CheatImage* cheat_image = FindCheatImage(size, entry);
++    if (cheat_image == nullptr) {
++        std::printf("unsupported image 0x%llx entry 0x%llx\n", static_cast<unsigned long long>(size),
++                    static_cast<unsigned long long>(entry));
++        return 1;
++    }
++    const std::span<const GuestHook> hooks = cheat_image->hooks;
++    const CheatGuestFunctions& fns = cheat_image->functions;
+     size_t bad = 0;
+     const GuestHookStatus status =
+-        guest_hooks_verify(image.data(), size, entry, &kSupportedImage, hooks.data(), hooks.size(), &bad);
++        guest_hooks_verify(image.data(), size, entry, &cheat_image->id, hooks.data(), hooks.size(), &bad);
+     std::printf("image 0x%llx entry 0x%llx: %s%s%s\n", static_cast<unsigned long long>(size),
+                 static_cast<unsigned long long>(entry), guest_hook_status_text(status), status ? " at " : "",
+                 status ? hooks[bad].name : "");
+@@ -2546,45 +2623,34 @@ int CheckImage(const char* path) {
+         return 1;
+     }
+     // The game functions the refills, Add 1,000 Gold and the durability refill call start as the runtime expects.
+-    const uint8_t get_gold[] = {0x55, 0x48, 0x89, 0xe5, 0x48, 0x8b, 0x07, 0xff, 0x90, 0xd8, 0x00, 0x00, 0x00};
+-    const uint8_t add_gold[] = {0x55, 0x48, 0x89, 0xe5, 0x41, 0x56, 0x53, 0x48, 0x89, 0xfb};
+-    if (std::memcmp(image.data() + 0x43d460, get_gold, sizeof(get_gold)) != 0 ||
+-        std::memcmp(image.data() + 0x43d490, add_gold, sizeof(add_gold)) != 0) {
++    // A group the image has no offset for is skipped; the rest must match.
++    if (fns.get_gold.offset != 0 &&
++        (std::memcmp(image.data() + fns.get_gold.offset, fns.get_gold.prologue.data(),
++                     fns.get_gold.prologue.size()) != 0 ||
++         std::memcmp(image.data() + fns.add_gold.offset, fns.add_gold.prologue.data(),
++                     fns.add_gold.prologue.size()) != 0)) {
+         std::printf("the gold functions differ\n");
+         return 1;
+     }
+-    const struct {
+-        uint64_t offset;
+-        std::vector<uint8_t> bytes;
+-    } item_functions[] = {
+-        {0x281ba0, {0x48, 0x8b, 0x8f, 0xb8, 0x09, 0x00, 0x00, 0x48, 0x85, 0xc9, 0x74, 0x0b}},
+-        {0xe3be0, {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x54, 0x53, 0x41, 0x89, 0xd6}},
+-        {0x224b40, {0x48, 0x8b, 0x87, 0x10, 0x05, 0x00, 0x00}},
+-        {0x2251b0, {0x85, 0xf6, 0x78, 0x3b}},
+-        {0x21d20, {0x55, 0x48, 0x89, 0xe5, 0x41, 0x56, 0x53, 0x48, 0x89, 0xfb}},
+-        {0x225fe0, {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53}},
+-    };
+-    for (const auto& function : item_functions) {
+-        if (std::memcmp(image.data() + function.offset, function.bytes.data(), function.bytes.size()) != 0) {
++    const GuestFunctionSite item_functions[] = {fns.is_dead, fns.refill, fns.equipment_count, fns.equipment_item,
++                                                fns.is_gear, fns.set_durability};
++    for (const GuestFunctionSite& function : item_functions) {
++        if (function.offset == 0) {
++            continue;
++        }
++        if (std::memcmp(image.data() + function.offset, function.prologue.data(), function.prologue.size()) != 0) {
+             std::printf("the game functions differ at 0x%llx\n", static_cast<unsigned long long>(function.offset));
+             return 1;
+         }
+     }
+     // The level-up helpers Level Up (+1 Level) uses.
+-    const struct {
+-        uint64_t offset;
+-        std::vector<uint8_t> bytes;
+-    } level_functions[] = {
+-        {0x83ae0, {0x80, 0xbf, 0x01, 0x01, 0x00, 0x00, 0x00, 0xb8, 0x63, 0x00, 0x00, 0x00}},
+-        {0x86ee0, {0x80, 0x7f, 0x6f, 0x2d, 0x0f, 0x92, 0xc0}},
+-        {0x4f950, {0x84, 0xd2, 0xb9, 0xfe, 0x00, 0x00, 0x00, 0xb8, 0x22, 0x00, 0x00, 0x00}},
+-        {0x2f9da0, {0x40, 0x80, 0xfe, 0xfe, 0xb9, 0xfe, 0x00, 0x00, 0x00, 0x89, 0xfa, 0x0f, 0x42, 0xce}},
+-        {0x81fe0, {0x48, 0x0f, 0xbe, 0x47, 0x27, 0x48, 0x83, 0xf8, 0x05, 0x77, 0x0b, 0x48, 0x8d, 0x0d}},
+-        {0x81fb0, {0x40, 0x80, 0xfe, 0xff, 0x75, 0x06, 0x80, 0x7f, 0x27, 0xff, 0x75, 0x0a}},
+-        {0x82000, {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x53, 0x50, 0x89, 0xcb, 0x49, 0x89, 0xff}},
+-    };
+-    for (const auto& function : level_functions) {
+-        if (std::memcmp(image.data() + function.offset, function.bytes.data(), function.bytes.size()) != 0) {
++    const GuestFunctionSite level_functions[] = {fns.record_mode, fns.record_stage, fns.max_level, fns.level_entry,
++                                                 fns.level_pattern, fns.set_level, fns.write_stats};
++    for (const GuestFunctionSite& function : level_functions) {
++        if (function.offset == 0) {
++            continue;
++        }
++        if (std::memcmp(image.data() + function.offset, function.prologue.data(), function.prologue.size()) != 0) {
+             std::printf("the level functions differ at 0x%llx\n", static_cast<unsigned long long>(function.offset));
+             return 1;
+         }
+@@ -2593,7 +2659,7 @@ int CheckImage(const char* path) {
+     const size_t room = hooks.size() * guest_hook_stub_size();
+     std::vector<uint8_t> copy(size + room);
+     std::memcpy(copy.data(), image.data(), size);
+-    if (guest_hooks_install(copy.data(), size, entry, &kSupportedImage, hooks.data(), hooks.size(), copy.data() + size,
++    if (guest_hooks_install(copy.data(), size, entry, &cheat_image->id, hooks.data(), hooks.size(), copy.data() + size,
+                             room, &bad) != GUEST_HOOK_OK) {
+         std::printf("installation failed\n");
+         return 1;
+@@ -3013,6 +3079,7 @@ int main(int argc, char** argv) {
+     TestMenuInput();
+     TestMovement();
+     TestHookTable();
++    TestAsia100HookTable();
+     TestPartialInstall();
+     TestNativeHooks();
+     std::printf("%d checks, %d failed\n", g_checks, g_failures);
