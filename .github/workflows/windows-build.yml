@@ -1,0 +1,73 @@
+# Windows build (MSYS2 CLANG64) with the CUSA10209 1.00 cheat patch.
+# Run by hand (Actions > Windows Build > Run workflow): the packaged ZIP
+# is kept as a workflow artifact; nothing is published, tagged or released.
+# The fork must contain asia100-cheats.patch at the repo root (the
+# CUSA10209 1.00 cheat patch, based on upstream a3e887c). The workflow
+# applies it before building and fails clearly if it is missing or does
+# not apply.
+name: Windows Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply CUSA10209 cheat patch
+        shell: pwsh
+        run: |
+          if (-not (Test-Path -LiteralPath 'asia100-cheats.patch')) {
+            throw 'asia100-cheats.patch not found at the repo root. Add it to the fork before running this workflow.'
+          }
+          git apply --check asia100-cheats.patch
+          if ($LASTEXITCODE -ne 0) { throw 'asia100-cheats.patch does not apply to this checkout (it is based on upstream a3e887c).' }
+          git apply asia100-cheats.patch
+          if ($LASTEXITCODE -ne 0) { throw 'git apply failed.' }
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: CLANG64
+          update: true
+          install: >-
+            mingw-w64-clang-x86_64-toolchain
+            mingw-w64-clang-x86_64-cmake
+            mingw-w64-clang-x86_64-ninja
+            mingw-w64-clang-x86_64-pkgconf
+            mingw-w64-clang-x86_64-sdl3
+            mingw-w64-clang-x86_64-freetype
+            mingw-w64-clang-x86_64-vulkan-headers
+            mingw-w64-clang-x86_64-vulkan-loader
+            mingw-w64-clang-x86_64-vulkan-memory-allocator
+            mingw-w64-clang-x86_64-glslang
+            mingw-w64-clang-x86_64-fmt
+            mingw-w64-clang-x86_64-boost
+            mingw-w64-clang-x86_64-robin-map
+            mingw-w64-clang-x86_64-xxhash
+            mingw-w64-clang-x86_64-libpng
+            mingw-w64-clang-x86_64-zydis
+            mingw-w64-clang-x86_64-spirv-tools
+            mingw-w64-clang-x86_64-spirv-headers
+            mingw-w64-clang-x86_64-spirv-cross
+
+      - name: Build and package
+        shell: pwsh
+        run: .\tools\package.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dragons-crown-pro-pc-windows-x64
+          path: |
+            dist/DragonsCrownProPC-*-windows-x64.zip
+            dist/DragonsCrownProPC-*-windows-x64.zip.sha256
+          if-no-files-found: error
