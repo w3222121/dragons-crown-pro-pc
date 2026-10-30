@@ -38,6 +38,11 @@ jobs:
       - uses: msys2/setup-msys2@v2
         with:
           msystem: CLANG64
+          # release:true (the default) installs MSYS2 to a temporary directory,
+          # which tools\*.ps1 never look at: they only check MSYS2_ROOT,
+          # C:\msys64 and D:\msys64. release:false uses the runner's
+          # preinstalled C:\msys64 instead.
+          release: false
           update: true
           install: >-
             mingw-w64-clang-x86_64-toolchain
@@ -59,6 +64,12 @@ jobs:
             mingw-w64-clang-x86_64-spirv-tools
             mingw-w64-clang-x86_64-spirv-headers
             mingw-w64-clang-x86_64-spirv-cross
+
+      - name: Check toolchain
+        # Prints exactly which tools are missing instead of package.ps1's
+        # generic error, and fails the run here if the toolchain is broken.
+        shell: pwsh
+        run: .\tools\setup.ps1
 
       - name: Build and package
         shell: pwsh
