@@ -1,16 +1,40 @@
 diff --git a/docs/CHEATS.md b/docs/CHEATS.md
-index e10ef94..eceee3f 100644
+index e10ef94..057cf1d 100644
 --- a/docs/CHEATS.md
 +++ b/docs/CHEATS.md
-@@ -25,7 +25,7 @@ While it is open the runtime reads neutral input for every pad and the keyboard
+@@ -1,6 +1,6 @@
+ # Cheats
+ 
+-Eleven optional cheats, in this order: **Infinite Health**, **Infinite Ally Health**, **Infinite Mana**, **Infinite Ally Mana**, **Infinite Lives**, **Infinite Durability**, **Infinite Ally Durability**, **Infinite Arrows**, **Infinite Skill Points**, **Infinite Skill Uses** and **Infinite Gold**. All default to Off. They apply to Player 1, except the three ally cheats, which apply to AI-controlled party allies (Infinite Gold to the whole save, see below). **Movement Speed** (Off, 2x or 4x) and **Experience Multiplier** (Off, 2x, 5x, 10x or 100x) are settings of their own (see below). The F10 menu also has the one-shot **Fill Health**, **Fill Ally Health**, **Set Low Health**, **Set Ally Low Health**, **Add 100 Skill Points**, **Add 1,000 Gold** and **Level Up (+1 Level)** actions, which are not saved. The launcher page and the F10 menu are described in [LAUNCHER.md](LAUNCHER.md). They are meant for offline and local play. While Online Play is on (the launcher switch or `DCP_ONLINE`), turning it on writes every cheat and both multipliers Off, the launcher's Cheats page shows only "Cheats are disabled while Online Play is enabled.", and the game ignores the saved values, installs no cheat hooks, and answers F10 with that line as a notice instead of opening the menu (`runtime_cheats_set_online` in `src/runtime_cheats.cpp`).
++Twelve optional cheats, in this order: **Infinite Health**, **Infinite Ally Health**, **Infinite Mana**, **Infinite Ally Mana**, **Infinite Lives**, **Infinite Durability**, **Infinite Ally Durability**, **Infinite Arrows**, **Infinite Skill Points**, **Infinite Skill Uses**, **Infinite Gold** and **Score 10x**. All default to Off. They apply to Player 1, except the three ally cheats, which apply to AI-controlled party allies (Infinite Gold to the whole save, see below). **Movement Speed** (Off, 2x or 4x) and **Experience Multiplier** (Off, 2x, 5x, 10x or 100x) are settings of their own (see below). The F10 menu also has the one-shot **Fill Health**, **Fill Ally Health**, **Set Low Health**, **Set Ally Low Health**, **Add 100 Skill Points**, **Set Skill Points 99**, **Add 1,000 Gold**, **Level Up (+1 Level)** and **Set Gold to Max** actions, which are not saved. The launcher page and the F10 menu are described in [LAUNCHER.md](LAUNCHER.md). They are meant for offline and local play. While Online Play is on (the launcher switch or `DCP_ONLINE`), turning it on writes every cheat and both multipliers Off, the launcher's Cheats page shows only "Cheats are disabled while Online Play is enabled.", and the game ignores the saved values, installs no cheat hooks, and answers F10 with that line as a notice instead of opening the menu (`runtime_cheats_set_online` in `src/runtime_cheats.cpp`).
+ 
+ ## Architecture
+ 
+@@ -19,13 +19,13 @@ Eleven optional cheats, in this order: **Infinite Health**, **Infinite Ally Heal
+ 
+ ## The F10 menu
+ 
+-F10 opens and closes it over the game; it lists the eleven cheats with **Fill Health**, **Fill Ally Health**, **Set Low Health** and **Set Ally Low Health** right below Infinite Ally Health, the **Add 100 Skill Points** action right below Infinite Skill Points, **Infinite Skill Uses** next, and **Add 1,000 Gold** and **Level Up (+1 Level)** right below Infinite Gold, then the **Movement Speed** and **Experience Multiplier** rows, and scrolls with the selection if the screen is too short; Up and Down (or the D-pad, or the left stick) move, Enter or A toggles a cheat, moves a multiplier to its next value or runs an action once without closing the menu, F10, Escape or B close. The panel is the display's content scale a step down (0.75x, at least 1.25x), and no more than 45% of the screen's width. It is drawn by the game's overlay, in the top right corner, with the launcher's gold (`src/dcp_accent.h`).
++F10 opens and closes it over the game; it lists the twelve cheats with **Fill Health**, **Fill Ally Health**, **Set Low Health** and **Set Ally Low Health** right below Infinite Ally Health, the **Add 100 Skill Points** and **Set Skill Points 99** actions right below Infinite Skill Points, **Infinite Skill Uses** next, and **Add 1,000 Gold**, **Level Up (+1 Level)** and **Set Gold to Max** right below Infinite Gold, **Score 10x** next, then the **Movement Speed** and **Experience Multiplier** rows, and scrolls with the selection if the screen is too short; Up and Down (or the D-pad, or the left stick) move, Enter or A toggles a cheat, moves a multiplier to its next value or runs an action once without closing the menu, F10, Escape or B close. The panel is the display's content scale a step down (0.75x, at least 1.25x), and no more than 45% of the screen's width. It is drawn by the game's overlay, in the top right corner, with the launcher's gold (`src/dcp_accent.h`).
+ 
+ While it is open the runtime reads neutral input for every pad and the keyboard (`dcpgpu_overlay_captures_input`). Closing starts a release gate: the menu waits until what was pressed in it is released (one second at most), and `runtime_pad.c` keeps hiding any button still held until it is released, so the closing press never reaches the game. F10 does nothing while a game dialog or the start-up loading screen is shown; the menu does not exist before the game window.
  
  ## Native hooks
  
 -The game runs as native x86-64 code from the loaded image. `guest_hook.c` writes nothing to `eboot.bin`: before the image is made executable it checks the image against the supported version (size 0x11f8060, entry 0x54c690, the boot image built from the eboot with SHA-256 `f9bff150c4c28507096e7e143a07492063ed89bf05ac6cb995a55a0946e3508a`, which the launcher's game file check also requires), then each site's original bytes, length and overlap. Every hook that passes becomes a `jmp` to a stub placed after the image, which saves all registers, calls the handler, restores them (the handler may change them), runs the replaced instructions and jumps back. A hook whose bytes do not match is skipped on its own with a line in the log (`Cheats: hook 'x' not installed, ...`) and the others still install; a wrong image installs none. The game runs either way.
-+The game runs as native x86-64 code from the loaded image. `guest_hook.c` writes nothing to `eboot.bin`: before the image is made executable it checks the image against the supported version (the US 1.00 image: size 0x11f8060, entry 0x54c690, the boot image built from the eboot with SHA-256 `f9bff150c4c28507096e7e143a07492063ed89bf05ac6cb995a55a0946e3508a`; the Asia/Hong Kong 1.00 image: size 0x1238060, entry 0x54a790, the boot image built from the eboot with SHA-256 `d37cbc39d84524dd38b818a18bba26ec556bb13e075c493fc927163fec8d039b`; the launcher's game file check also requires the eboot hash), then each site's original bytes, length and overlap. The hook table and the game functions are picked per image: the Asia/Hong Kong 1.00 table holds 23 of the 25 sites (damage, use mana, skill points, player tick, lives, walk speed, the ten gold stores, skill budget, the four skill-use sites, arrows and durability) and its game functions are the level group, the refill group and the gold group; the mana drain and experience sites and the equipment functions have no verified offset on that image yet, so those cheats install nothing there instead of a guessed site. Three Asia/Hong Kong gold sites (beggar, base, inn 2) and the refill function were picked by order and regional shift among two byte matches each and still need in-game confirmation. The table below lists the US 1.00 offsets; the Asia/Hong Kong 1.00 offsets are in `src/cheat_hooks.cpp` (`HooksAsia100`). Every hook that passes becomes a `jmp` to a stub placed after the image, which saves all registers, calls the handler, restores them (the handler may change them), runs the replaced instructions and jumps back. A hook whose bytes do not match is skipped on its own with a line in the log (`Cheats: hook 'x' not installed, ...`) and the others still install; a wrong image installs none. The game runs either way.
++The game runs as native x86-64 code from the loaded image. `guest_hook.c` writes nothing to `eboot.bin`: before the image is made executable it checks the image against the supported version (the US 1.00 image: size 0x11f8060, entry 0x54c690, the boot image built from the eboot with SHA-256 `f9bff150c4c28507096e7e143a07492063ed89bf05ac6cb995a55a0946e3508a`; the Asia/Hong Kong 1.00 image: size 0x1238060, entry 0x54a790, the boot image built from the eboot with SHA-256 `d37cbc39d84524dd38b818a18bba26ec556bb13e075c493fc927163fec8d039b`; the launcher's game file check also requires the eboot hash), then each site's original bytes, length and overlap. The hook table and the game functions are picked per image: the Asia/Hong Kong 1.00 table holds 24 of the 25 sites (damage, use mana, skill points, player tick, lives, walk speed, the ten gold stores, skill budget, the four skill-use sites, arrows, durability and score) and its game functions are the level group, the refill group and the gold group; the mana drain and experience sites and the equipment functions have no verified offset on that image yet, so those cheats install nothing there instead of a guessed site. Three Asia/Hong Kong gold sites (beggar, base, inn 2) and the refill function were picked by order and regional shift among two byte matches each and still need in-game confirmation. The table below lists the US 1.00 offsets; the Asia/Hong Kong 1.00 offsets are in `src/cheat_hooks.cpp` (`HooksAsia100`). Every hook that passes becomes a `jmp` to a stub placed after the image, which saves all registers, calls the handler, restores them (the handler may change them), runs the replaced instructions and jumps back. A hook whose bytes do not match is skipped on its own with a line in the log (`Cheats: hook 'x' not installed, ...`) and the others still install; a wrong image installs none. The game runs either way.
  
  All offsets are image offsets, the same as the eboot offsets cheat tools use. Every hook returns at once when its cheat is Off, so the game runs its own code.
  
+@@ -45,7 +45,7 @@ All offsets are image offsets, the same as the eboot offsets cheat tools use. Ev
+ | Skill Points | `0x8ab24`, in the record's skill budget check `0x8aa00`, before it compares owned with allowed | `8b 5d a4 45 01 f4 41 01 dd 45 29 ec` | An excess of owned over allowed is added to the allowance, so the check finds nothing to repair |
+ | Gold | ten stores `mov [base+0xaf238], reg` (`0x52e0b3` shop, `0x43d562` continue, `0x3bc693`, `0x3bff22`, `0x3c2420`, `0x3c3b82`, `0x3c40da`, `0x4953cd`, `0x49562d`, `0x4cc47a`) | the store itself, 6 to 8 bytes | A store that would lower gold keeps the old value |
+ | Movement Speed | `0x2ecd0a`, in the pad-driven walk `0x2ec9d0` | `48 8b 5d 80 48 8b 03` | Multiplies the walk's speed multiplier (a float at `[rbp-0x48]`) by 2 or 4 for Player 1 |
+-| Refill, Add 100 Skill Points, Add 1,000 Gold, Level Up (+1 Level), Arrows | `0x2ea420`, entry of the player unit's per-tick update | `55 48 89 e5 41 57` | Applies a pending Mana refill, Fill Health, Set Low Health, Add 100 Skill Points, Add 1,000 Gold and Level Up (+1 Level) to Player 1; holds Player 1's Elf at 10 arrows while Infinite Arrows is On; holds the frozen HP of Player 1 (Infinite Health) and AI allies (Infinite Ally Health); keeps AI ally mana full while Infinite Ally Mana is On |
++| Refill, Add 100 Skill Points, Set Skill Points 99, Add 1,000 Gold, Set Gold to Max, Level Up (+1 Level), Arrows | `0x2ea420`, entry of the player unit's per-tick update | `55 48 89 e5 41 57` | Applies a pending Mana refill, Fill Health, Set Low Health, Add 100 Skill Points, Set Skill Points 99, Add 1,000 Gold, Set Gold to Max and Level Up (+1 Level) to Player 1; holds Player 1's Elf at 10 arrows while Infinite Arrows is On; holds the frozen HP of Player 1 (Infinite Health) and AI allies (Infinite Ally Health); keeps AI ally mana full while Infinite Ally Mana is On |
+ | Experience | `0x27511`, the return of the experience-gain function `0x27430` | `48 83 c4 08 5b 41 5c` | The gain (rax) is multiplied by 2, 5, 10 or 100 for every award; see Experience Multiplier |
+ 
+ ### Infinite Health
 @@ -78,7 +78,7 @@ A life is consumed in one place: the RESPAWN_NOTIFY handler computes `lp - 1` (a
  
  Item durability is stored in the item instance as 100 times the displayed value (current at `+0x44`, maximum at `+0x48`). Every wear (weapon swings, hits taken, staff casts) is the buff event `DC_BUFFID_COMMON_UPDATE_ENDURANCE` with a signed delta; the handler that applies it clamps `delta + current` and writes it through one setter. The hook zeroes a negative delta for Player 1's unit; repairs, recovery, maximums, equipment changes and the shop (which writes the item directly) are untouched.
@@ -29,7 +53,7 @@ index e10ef94..eceee3f 100644
  
  ### Infinite Skill Points
  
-@@ -96,7 +96,7 @@ Skill points are an int16 at `+0x24` of the player's save record (record 0 is Pl
+@@ -96,12 +96,16 @@ Skill points are an int16 at `+0x24` of the player's save record (record 0 is Pl
  
  ### Infinite Skill Uses
  
@@ -38,7 +62,38 @@ index e10ef94..eceee3f 100644
  
  ### Add 100 Skill Points
  
-@@ -136,7 +136,7 @@ An AI party ally has the same player category, a valid player class, a party slo
+ A one-shot action of the F10 menu, not a cheat: it has no Off / On, no launcher entry and no saved setting. Each press files one request; the player tick hook runs it on the game thread for Player 1's unit, reads Player 1's save record at `+0x24`, adds 100 and writes the result to the record and the unit's mirror at `+0xc8`. At the int16 maximum (32,767) it stops there and adds nothing, so the value never wraps. Two presses add 200; the action never runs every frame, and requests left when the menu closes are dropped. Infinite Skill Points is unchanged and does not interfere.
+ 
++### Set Skill Points 99
++
++A one-shot action of the F10 menu, not a cheat: it has no Off / On, no launcher entry and no saved setting. Each press files one request; the player tick hook runs it on the game thread for Player 1's unit, writes 99 to Player 1's save record at `+0x24` and the unit's mirror at `+0xc8`. It sets rather than adds, so pressing it at 200 still leaves 99. The game's own budget check still applies: with Infinite Skill Points Off, the next check trims the record to its level allowance, so 99 only sticks while Infinite Skill Points is On (or the allowance already covers it). Requests left when the menu closes are dropped.
++
+ ### Infinite Gold
+ 
+ Gold is a single value for the whole save (`[saveData+0xaf238]`, at most 99,999,999), not one per player, and most spending paths (item shop, Stable, Inn, Beggar and the rest) compute the new value inline instead of calling a shared function. One hook sits on each of the ten stores and keeps the old value when the new one is lower. Because the pool is shared the cheat applies to every buyer while it is On, which in a local game means Player 2 spends nothing as well; gains, prices and the score are untouched.
+@@ -110,6 +114,10 @@ Gold is a single value for the whole save (`[saveData+0xaf238]`, at most 99,999,
+ 
+ A one-shot action of the F10 menu, not a cheat: it has no Off / On, no launcher entry and no saved setting. Each press files one request (`ActionRequests`); the player tick hook runs it on the game thread for Player 1's unit, asking the game for its own `GetGold` (`0x43d460`) and `AddGold` (`0x43d490`) with the object the continue payment uses (`unit->vtable[+0xd0]()` then `+0x88`). `AddGold` clamps to the game's maximum, 99,999,999, and keeps the per-player gold counters; when the gold is within 1,000 of it only what fits is added, and at the maximum the game is not called. It changes the running game's gold, not the save file, and Dragon's Crown saves it as it saves any gold. One physical press is one addition: ImGui's activation fires on the press only, so a held Enter or A does not repeat; requests that were not run when the menu closes are dropped.
+ 
++### Set Gold to Max
++
++A one-shot action of the F10 menu, not a cheat: it has no Off / On, no launcher entry and no saved setting. Each press files one request (`ActionRequests`); the player tick hook runs it on the game thread for Player 1's unit, asking the game's own `GetGold` (`0x43d460`) and `AddGold` (`0x43d490`) with the object the continue payment uses, for what is left below the game's maximum, 99,999,999. At the maximum the game is not called. One physical press is one top-up; requests that were not run when the menu closes are dropped.
++
+ ### Level Up (+1 Level)
+ 
+ A one-shot action of the F10 menu, not a cheat: it has no launcher entry and no saved setting. Each press files one request; the player tick hook runs it on Player 1's save record. It reads the level and class, asks the game's own level cap function for the current mode's maximum, and does nothing when Player 1 is already there. Otherwise it advances the record and the live unit by exactly one level, moves the XP bar to the start of the new level (carrying any excess XP back to the record's pool), grants the one skill point the game gives per level up to level 99, and recomputes the record and unit base stats through the game's own level table and stat function (`0x82000`). It does not run every frame, and requests left when the menu closes are dropped. Live derived HP/MP catch up when the game next refreshes the character; the save record is already consistent.
+@@ -122,6 +130,10 @@ The award is the function at `0x27430`, which computes the experience one player
+ 
+ The scope is the function's: every player the dispatch case awards (Players 1 to 4 in local play), not only Player 1. Enemy kills and treasure give score, which the stage result converts; that comes from the static reading and the real game test should confirm it.
+ 
++### Score 10x
++
++While Score 10x is On, score gains through the score-add function are multiplied by 10. The function (Asia `0x47a560`; the US 1.00 store is `0x47B229`) takes the gain in `esi` and adds it to two fields of the score object, `+0x1c` and the total `+0x80`, each clamped to 99,999,999 and floored at 0; the hook sits at the function's entry and multiplies a positive gain, capped so the product never passes the maximum, so the function's own clamp still holds. Losses are not multiplied. The US 1.00 table has no score hook yet (the entry on that image is unverified), so the cheat installs nothing there. The sibling score helper (Asia `0x47a5b0`, fields `+0x20`/`+0x84`) is not hooked, so gains through it are not multiplied; whether every score gain flows through the hooked function was not proved statically and is what the real game test should watch.
++
+ ### Movement Speed
+ 
+ The launcher's Cheats page has a **Movement Speed** combo (Off, 2x, 4x), saved as `cheat_movement_speed` with the values 1, 2 or 4; a missing or other value is Off. The old `cheat_movement_speed_2x` boolean is read only when the new setting is absent, and its On means 2x. It is a setting, not a cheat: F10 moves it to the next value (Off, 2x, 4x, Off) for the session, and the saved value starts each session.
+@@ -136,7 +148,7 @@ An AI party ally has the same player category, a valid player class, a party slo
  
  ## Tests
  
@@ -48,11 +103,15 @@ index e10ef94..eceee3f 100644
  ## Not covered
  
 diff --git a/docs/LAUNCHER.md b/docs/LAUNCHER.md
-index 09e5eec..1205272 100644
+index 09e5eec..dbd1ff6 100644
 --- a/docs/LAUNCHER.md
 +++ b/docs/LAUNCHER.md
-@@ -376,8 +376,11 @@ rows in this order: **Infinite Health**, **Infinite Ally Health**, **Infinite Ma
- Points**, **Infinite Skill Uses**, **Infinite Gold**, each with its one-line description (`src/dcp_cheats.h`), and
+@@ -373,11 +373,15 @@ line "Press F10 while playing to open the Cheats menu. Changes made there apply
+ offline and local play." and Off / On
+ rows in this order: **Infinite Health**, **Infinite Ally Health**, **Infinite Mana**, **Infinite Ally Mana**,
+ **Infinite Lives**, **Infinite Durability**, **Infinite Ally Durability**, **Infinite Arrows**, **Infinite Skill
+-Points**, **Infinite Skill Uses**, **Infinite Gold**, each with its one-line description (`src/dcp_cheats.h`), and
++Points**, **Infinite Skill Uses**, **Infinite Gold** and **Score 10x**, each with its one-line description (`src/dcp_cheats.h`), and
  below them the **Movement Speed** combo
  (Off, 2x, 4x) and the **Experience Multiplier** combo (Off, 2x, 5x, 10x, 100x).
 -Cheats work on the CUSA10454 1.00 (US) build only; on the USA 1.01, Japanese and Asia and Hong Kong builds the page and
@@ -61,10 +120,29 @@ index 09e5eec..1205272 100644
 +Asia/Hong Kong 1.02 builds the page and the menu show them as unavailable. On the Asia/Hong Kong 1.00 build some
 +cheats install nothing yet (Experience Multiplier and the sustained mana
 +drain); Infinite Durability protects against wear but its turn-on refill is unavailable;
++Score 10x installs nothing on the US build (no verified site on that image);
 +see [CHEATS.md](CHEATS.md). All are ordinary saved settings, Off by default: Save and Play keep them, Reset all settings puts
  them back to Off. The saved values are the start of every game session; the F10 menu changes the running session only
  and never writes them. The hooks, the menu and Player 1 targeting are in [CHEATS.md](CHEATS.md).
  
+@@ -385,7 +389,7 @@ and never writes them. The hooks, the menu and Player 1 targeting are in [CHEATS
+ 
+ Xbox controllers work without setup; the keyboard is always on. The page lists the layout implemented in
+ `runtime_pad.c` (W A S D and the arrow keys for the sticks, Space, Left Shift, E, Q, 1, 3, R, F, Z, C, I K J L, Enter,
+-Tab, Backspace) and that F10 opens the Cheats menu in the game (it also has the one-shot **Add 100 Skill Points**, **Add 1,000 Gold** and **Level Up (+1 Level)**, which are not settings). The dead zone is not a setting.
++Tab, Backspace) and that F10 opens the Cheats menu in the game (it also has the one-shot **Add 100 Skill Points**, **Set Skill Points 99**, **Add 1,000 Gold**, **Level Up (+1 Level)** and **Set Gold to Max**, which are not settings). The dead zone is not a setting.
+ 
+ The page has two sections. **Keyboard controls** are the PS4 inputs (the sticks' four directions each, the face buttons, L1/R1/L2/R2/L3/R3, the D-pad, Options and the two touchpad sides); **Port hotkeys** are the Cheats menu and Window mode keys. Click a row (or focus it and press Enter), then press the new key; Esc cancels and is never bound. **Reset to defaults** puts these keys back and changes no other setting.
+ 
+@@ -396,7 +400,7 @@ A gamepad that is found takes the lowest free slot and logs its user in once; th
+ `LOGIN` event. The keyboard, `DCP_PAD_FILE`, pad recording and replay and the save list's controls belong to Player 1
+ only. Unplugging a gamepad closes it and frees its slot, but no `LOGOUT` is sent: the player stays logged in, and the
+ next gamepad connected takes the lowest free slot, which is not necessarily the same player. A fifth gamepad is ignored.
+-The cheats act on Player 1 only (Infinite Gold, which is one pool for the save, excepted); Infinite Ally Health, Infinite Ally Mana and Infinite Ally Durability act on AI-controlled party allies instead. Add 100 Skill Points and Level Up (+1 Level) change Player 1's save record. The Experience Multiplier applies to every player's experience award; see [CHEATS.md](CHEATS.md).
++The cheats act on Player 1 only (Infinite Gold, which is one pool for the save, excepted); Infinite Ally Health, Infinite Ally Mana and Infinite Ally Durability act on AI-controlled party allies instead. Add 100 Skill Points, Set Skill Points 99 and Level Up (+1 Level) change Player 1's save record. The Experience Multiplier applies to every player's experience award; see [CHEATS.md](CHEATS.md).
+ 
+ **Controller prompts**: PlayStation (original) or Xbox. The game draws its button prompts from one 1024 × 512 BC7
+ atlas (`Interface_arranged000`) in `stage/Interface.ftx` and in each language's `stage/Interface_XX.ftx` (DE, ES, FR, IT,
 diff --git a/launcher/game_profile.cpp b/launcher/game_profile.cpp
 index 04d9f9f..b55f823 100644
 --- a/launcher/game_profile.cpp
@@ -79,17 +157,127 @@ index 04d9f9f..b55f823 100644
          false,
          true,
 diff --git a/src/cheat_hooks.cpp b/src/cheat_hooks.cpp
-index 292d746..e8d89cc 100644
+index 292d746..9b380ff 100644
 --- a/src/cheat_hooks.cpp
 +++ b/src/cheat_hooks.cpp
-@@ -626,6 +626,47 @@ std::span<const GuestHook> Hooks() {
+@@ -167,6 +167,20 @@ void GUEST_HOOK_ABI ExperienceHook(GuestRegs* regs) {
+     regs->rax = static_cast<uint64_t>(MultipliedExperience(multiplier, static_cast<int64_t>(regs->rax)));
+ }
+ 
++// At the entry of the score-add function (rdi = the score object, esi = the gain): a positive gain is multiplied by
++// 10 while Score 10x is On, capped at the game's own maximum, so the function's own clamp still holds. Non-positive
++// gains are left alone.
++void GUEST_HOOK_ABI ScoreHook(GuestRegs* regs) {
++    if (!Enabled(Cheat::Score10x)) {
++        return;
++    }
++    const int64_t gain = static_cast<int32_t>(regs->rsi);
++    if (gain <= 0) {
++        return;
++    }
++    regs->rsi = static_cast<uint64_t>(MultipliedScore(gain));
++}
++
+ // In the pad-driven walk, once its speed multiplier is final (the unit is at [rbp-0x80], the float at [rbp-0x48]).
+ void GUEST_HOOK_ABI MovementHook(GuestRegs* regs) {
+     const int movement_speed = runtime_cheat_movement_speed();
+@@ -433,6 +447,24 @@ void ApplyAddGold(uint64_t unit) {
+     std::printf("Cheats: Add 1,000 Gold, %d -> %d\n", before, g_guest.get_gold(context));
+ }
+ 
++// One request, one top-up to the maximum: the game applies its own clamp, and at the maximum nothing is added.
++void ApplySetGoldMax(uint64_t unit) {
++    if (g_guest.gold_context == nullptr || g_guest.get_gold == nullptr || g_guest.add_gold == nullptr) {
++        return;
++    }
++    const uint64_t context = g_guest.gold_context(unit);
++    if (context == 0 || runtime_cheat_take_action(static_cast<int>(Action::SetGoldMax)) == 0) {
++        return;
++    }
++    const int32_t before = g_guest.get_gold(context);
++    const int32_t held = before < 0 ? 0 : before;
++    const int32_t increase = held >= kGoldMaximum ? 0 : kGoldMaximum - held;
++    if (increase > 0) {
++        g_guest.add_gold(context, increase);
++    }
++    std::printf("Cheats: Set Gold to Max, %d -> %d\n", before, g_guest.get_gold(context));
++}
++
+ // One request, one +100 to Player 1's own save record, clamped to the int16 maximum. The unit's mirror is kept in step.
+ void ApplyAddSkillPoints(uint64_t unit) {
+     if (g_guest.save_record == nullptr) {
+@@ -453,6 +485,28 @@ void ApplyAddSkillPoints(uint64_t unit) {
+     std::printf("Cheats: Add 100 Skill Points, %d -> %d\n", before, after);
+ }
+ 
++// One request, one set of Player 1's own save record to 99 skill points. The unit's mirror is kept in step. The
++// game's own budget check still applies: with Infinite Skill Points Off, the next check trims the record to its
++// level allowance, so 99 only sticks while the cheat is On (or the allowance already covers it).
++void ApplySetSkillPoints99(uint64_t unit) {
++    if (g_guest.save_record == nullptr) {
++        return;
++    }
++    const uint64_t record = g_guest.save_record(unit);
++    if (record == 0 || runtime_cheat_take_action(static_cast<int>(Action::SetSkillPoints99)) == 0) {
++        return;
++    }
++    const int32_t before = static_cast<int16_t>(HostMemory::Load<uint16_t>(record + kSkillPointsOffset));
++    const int32_t after = 99;
++    if (after != before) {
++        const uint16_t value = static_cast<uint16_t>(after);
++        std::memcpy(reinterpret_cast<void*>(static_cast<uintptr_t>(record + kSkillPointsOffset)), &value, sizeof(value));
++        std::memcpy(reinterpret_cast<void*>(static_cast<uintptr_t>(unit + kSkillPointsMirrorOffset)), &value,
++                    sizeof(value));
++    }
++    std::printf("Cheats: Set Skill Points 99, %d -> %d\n", before, after);
++}
++
+ bool AddLevelAvailable() {
+     return g_guest.save_record != nullptr && g_guest.record_mode != nullptr && g_guest.record_stage != nullptr &&
+            g_guest.max_level != nullptr && g_guest.level_entry != nullptr && g_guest.level_pattern != nullptr &&
+@@ -534,6 +588,9 @@ void GUEST_HOOK_ABI PlayerTickHook(GuestRegs* regs) {
+     const bool add_skill_points = runtime_cheat_action_pending(static_cast<int>(Action::AddSkillPoints)) != 0;
+     const bool add_gold = runtime_cheat_action_pending(static_cast<int>(Action::AddGold)) != 0;
+     const bool add_level = runtime_cheat_action_pending(static_cast<int>(Action::AddLevel)) != 0;
++    const bool set_skill_points_99 =
++        runtime_cheat_action_pending(static_cast<int>(Action::SetSkillPoints99)) != 0;
++    const bool set_gold_max = runtime_cheat_action_pending(static_cast<int>(Action::SetGoldMax)) != 0;
+     const bool health_action = HealthActionPending();
+     const bool arrows = Enabled(Cheat::InfiniteArrows);
+     const bool player_frozen = Enabled(Cheat::InfiniteHealth);
+@@ -553,7 +610,7 @@ void GUEST_HOOK_ABI PlayerTickHook(GuestRegs* regs) {
+         RememberAlly(regs->rdi);
+     }
+     if (refills == 0 && !add_skill_points && !add_gold && !add_level && !arrows && !player_frozen && !ally_frozen &&
+-        !ally_mana &&
++        !ally_mana && !set_skill_points_99 && !set_gold_max &&
+         !health_action) {
+         return;
+     }
+@@ -576,9 +633,15 @@ void GUEST_HOOK_ABI PlayerTickHook(GuestRegs* regs) {
+         if (add_skill_points) {
+             ApplyAddSkillPoints(regs->rdi);
+         }
++        if (set_skill_points_99) {
++            ApplySetSkillPoints99(regs->rdi);
++        }
+         if (add_gold) {
+             ApplyAddGold(regs->rdi);
+         }
++        if (set_gold_max) {
++            ApplySetGoldMax(regs->rdi);
++        }
+         if (add_level) {
+             ApplyAddLevel(regs->rdi);
+         }
+@@ -626,6 +689,50 @@ std::span<const GuestHook> Hooks() {
      return hooks;
  }
  
 +// The Asia/Hong Kong 1.00 table: the sites with a verified offset on that image. The three gold entries marked
 +// candidate were picked by order and regional shift among two byte matches each, not by a unique match, and still
-+// need in-game confirmation; the sites with no verified offset yet (mana drain, arrows, durability, experience
-+// and the four skill-use decrements) are left out, so those cheats install nothing on that image.
++// need in-game confirmation; the sites with no verified offset yet (mana drain and experience)
++// are left out, so those cheats install nothing on that image.
 +std::span<const GuestHook> HooksAsia100() {
 +    static const GuestHook hooks[] = {
 +        {"damage", 0xd7eb3, 6, {0x89, 0x8d, 0xdc, 0xfd, 0xff, 0xff}, HealthDamageHook},
@@ -123,6 +311,9 @@ index 292d746..e8d89cc 100644
 +        // durability is the US endurance-event site, same bytes and handler.
 +        {"arrows", 0x1afe10, 6, {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57}, ArrowHook},
 +        {"durability", 0xfd903, 7, {0x83, 0xbd, 0x04, 0xfd, 0xff, 0xff, 0x00}, DurabilityHook},
++        // Verified on the real CUSA10209 1.00 image: the score-add function entry (the US 1.00 store is 0x47B229,
++        // this image's store is 0x47a599, one match in each of the US, Asia and v1.03 images).
++        {"score", 0x47a560, 9, {0x8b, 0x4f, 0x1c, 0x41, 0xb8, 0xff, 0xe0, 0xf5, 0x05}, ScoreHook},
 +    };
 +    return hooks;
 +}
@@ -130,7 +321,7 @@ index 292d746..e8d89cc 100644
  } // namespace dcp::cheats
  
  namespace {
-@@ -670,9 +711,22 @@ constexpr uint8_t kEquipmentItemPrologue[] = {0x85, 0xf6, 0x78, 0x3b};
+@@ -670,9 +777,22 @@ constexpr uint8_t kEquipmentItemPrologue[] = {0x85, 0xf6, 0x78, 0x3b};
  constexpr uint8_t kIsGearPrologue[] = {0x55, 0x48, 0x89, 0xe5, 0x41, 0x56, 0x53, 0x48, 0x89, 0xfb};
  constexpr uint8_t kSetDurabilityPrologue[] = {0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53};
  
@@ -156,7 +347,7 @@ index 292d746..e8d89cc 100644
  }
  
  uint64_t GameContext(uint64_t unit) {
-@@ -704,15 +758,87 @@ uint64_t GUEST_HOOK_ABI GameSaveRecord(uint64_t unit) {
+@@ -704,15 +824,87 @@ uint64_t GUEST_HOOK_ABI GameSaveRecord(uint64_t unit) {
  
  } // namespace
  
@@ -248,7 +439,7 @@ index 292d746..e8d89cc 100644
          std::printf("Cheats: unavailable, not the supported game image\n");
          return 0;
      }
-@@ -724,7 +850,7 @@ extern "C" int runtime_cheat_hooks_install(uint8_t* image, uint64_t size, uint64
+@@ -724,7 +916,7 @@ extern "C" int runtime_cheat_hooks_install(uint8_t* image, uint64_t size, uint64
      size_t installed = 0;
      for (size_t i = 0; i < hooks.size(); ++i) {
          size_t bad = 0;
@@ -257,7 +448,7 @@ index 292d746..e8d89cc 100644
                                                             1, stubs + i * stride, stubs_size - i * stride, &bad);
          if (status == GUEST_HOOK_OK) {
              ++installed;
-@@ -738,49 +864,45 @@ extern "C" int runtime_cheat_hooks_install(uint8_t* image, uint64_t size, uint64
+@@ -738,49 +930,45 @@ extern "C" int runtime_cheat_hooks_install(uint8_t* image, uint64_t size, uint64
      }
      dcp::cheats::GuestFunctions functions;
      functions.save_record = GameSaveRecord;
@@ -332,7 +523,7 @@ index 292d746..e8d89cc 100644
          std::printf("Cheats: Infinite Durability refill not available, the game's item functions differ\n");
      }
 diff --git a/src/cheat_hooks.h b/src/cheat_hooks.h
-index d9fcfa1..b9f4c0d 100644
+index d9fcfa1..4006662 100644
 --- a/src/cheat_hooks.h
 +++ b/src/cheat_hooks.h
 @@ -1,4 +1,4 @@
@@ -354,10 +545,12 @@ index d9fcfa1..b9f4c0d 100644
  
  void GUEST_HOOK_ABI HealthDamageHook(GuestRegs* regs);
  void GUEST_HOOK_ABI ManaCostHook(GuestRegs* regs);
-@@ -26,6 +29,47 @@ void GUEST_HOOK_ABI LivesHook(GuestRegs* regs);
+@@ -25,6 +28,48 @@ void GUEST_HOOK_ABI DurabilityHook(GuestRegs* regs);
+ void GUEST_HOOK_ABI LivesHook(GuestRegs* regs);
  void GUEST_HOOK_ABI MovementHook(GuestRegs* regs);
  void GUEST_HOOK_ABI ExperienceHook(GuestRegs* regs);
- 
++void GUEST_HOOK_ABI ScoreHook(GuestRegs* regs);
++
 +// One game function a refill or a menu action calls: its image offset and the bytes its start must hold.
 +// An offset of 0 means the image has no such function; the install code checks a whole group before it uses any
 +// of its functions, so a group with a missing or differing function leaves only that feature unavailable.
@@ -398,11 +591,10 @@ index d9fcfa1..b9f4c0d 100644
 +
 +// The supported image with this size and entry, or nullptr.
 +const CheatImage* FindCheatImage(uint64_t size, uint64_t entry);
-+
+ 
  // The game functions the refills and the menu's actions call; set from the image when the hooks are installed,
  // replaced in the tests. gold_context is the object AddGold and GetGold take, found from a player's unit; save_record
- // is that player's save record (Player 1's for slot 0).
-@@ -54,4 +98,9 @@ void SetGuestFunctions(const GuestFunctions& functions);
+@@ -54,4 +99,9 @@ void SetGuestFunctions(const GuestFunctions& functions);
  
  std::span<const GuestHook> Hooks();
  
@@ -412,17 +604,293 @@ index d9fcfa1..b9f4c0d 100644
 +std::span<const GuestHook> HooksAsia100();
 +
  } // namespace dcp::cheats
+diff --git a/src/dcp_cheats.h b/src/dcp_cheats.h
+index 83ebb76..c2c7ee7 100644
+--- a/src/dcp_cheats.h
++++ b/src/dcp_cheats.h
+@@ -24,9 +24,10 @@ enum class Cheat : uint8_t {
+     InfiniteArrows,
+     InfiniteSkillPoints,
+     InfiniteSkillUses,
+-    InfiniteGold
++    InfiniteGold,
++    Score10x
+ };
+-inline constexpr size_t kCheatCount = 11;
++inline constexpr size_t kCheatCount = 12;
+ inline constexpr bool kCheatDefault = false;
+ 
+ inline constexpr char kInfiniteHealthKey[] = "cheat_infinite_health";
+@@ -40,6 +41,7 @@ inline constexpr char kInfiniteArrowsKey[] = "cheat_infinite_arrows";
+ inline constexpr char kInfiniteSkillPointsKey[] = "cheat_infinite_skill_points";
+ inline constexpr char kInfiniteSkillUsesKey[] = "cheat_infinite_skill_uses";
+ inline constexpr char kInfiniteGoldKey[] = "cheat_infinite_gold";
++inline constexpr char kScore10xKey[] = "cheat_score_10x";
+ inline constexpr char kLegacyMovementSpeedKey[] = "cheat_movement_speed_2x";
+ 
+ struct CheatInfo {
+@@ -67,6 +69,7 @@ inline constexpr CheatInfo kCheats[] = {
+     {Cheat::InfiniteSkillUses, kInfiniteSkillUsesKey, "Infinite Skill Uses",
+      "Prevent equipped skill uses from decreasing when used"},
+     {Cheat::InfiniteGold, kInfiniteGoldKey, "Infinite Gold", "Prevent gold from decreasing when spent"},
++    {Cheat::Score10x, kScore10xKey, "Score 10x", "Multiply score gains by 10"},
+ };
+ static_assert(std::size(kCheats) == kCheatCount);
+ 
+@@ -81,8 +84,8 @@ constexpr size_t Index(Cheat cheat) {
+ }
+ 
+ // One-shot commands of the in-game menu. They are not cheats: nothing is saved or kept On.
+-enum class Action : uint8_t { AddSkillPoints, AddGold, AddLevel, FillHealth, SetLowHealth, FillAllyHealth, SetAllyLowHealth };
+-inline constexpr size_t kActionCount = 7;
++enum class Action : uint8_t { AddSkillPoints, AddGold, AddLevel, FillHealth, SetLowHealth, FillAllyHealth, SetAllyLowHealth, SetSkillPoints99, SetGoldMax };
++inline constexpr size_t kActionCount = 9;
+ 
+ struct ActionInfo {
+     Action action;
+@@ -99,6 +102,8 @@ inline constexpr ActionInfo kActions[] = {
+     {Action::FillAllyHealth, Cheat::InfiniteAllyHealth, "Fill Ally Health", nullptr},
+     {Action::SetLowHealth, Cheat::InfiniteAllyHealth, "Set Low Health", nullptr},
+     {Action::SetAllyLowHealth, Cheat::InfiniteAllyHealth, "Set Ally Low Health", nullptr},
++    {Action::SetSkillPoints99, Cheat::InfiniteSkillPoints, "Set Skill Points 99", "Set"},
++    {Action::SetGoldMax, Cheat::InfiniteGold, "Set Gold to Max", "Set"},
+ };
+ static_assert(std::size(kActions) == kActionCount);
+ 
+@@ -455,6 +460,16 @@ constexpr int32_t GoldIncrease(int32_t current) {
+     return room < kGoldPerAdd ? room : kGoldPerAdd;
+ }
+ 
++// The score-add function (Asia 0x47a560; the US 1.00 store is 0x47B229): esi is the gain, added to two fields of the
++// score object, [obj+0x1c] and the total [obj+0x80], each clamped to the maximum and floored at 0. Score 10x
++// multiplies a positive gain, capped so the product never passes the maximum.
++inline constexpr int32_t kScoreMaximum = 99999999;
++
++constexpr int64_t MultipliedScore(int64_t gain) {
++    const int64_t multiplied = gain * 10;
++    return multiplied > kScoreMaximum ? kScoreMaximum : multiplied;
++}
++
+ // The walk multiplier the game builds from MOVE_UP buffs (1.0 without any) scales the pad-driven walk's speeds and its
+ // look-ahead alike; Movement Speed scales it for Player 1, as a MOVE_UP buff of the same size would.
+ constexpr float ScaledWalkMultiplier(int movement_speed, UnitKind kind, float multiplier) {
 diff --git a/tests/cheats_tests.cpp b/tests/cheats_tests.cpp
-index 2f32df9..a78233d 100644
+index 2f32df9..4898df8 100644
 --- a/tests/cheats_tests.cpp
 +++ b/tests/cheats_tests.cpp
-@@ -2470,6 +2470,74 @@ void TestHookTable() {
+@@ -60,7 +60,7 @@ std::string ReadSource(const char* relative) {
+ }
+ 
+ void TestCheatList() {
+-    CHECK(kCheatCount == 11);
++    CHECK(kCheatCount == 12);
+     CHECK(std::size(kCheats) == kCheatCount);
+     CHECK(!kCheatDefault);
+     struct Expected {
+@@ -83,6 +83,7 @@ void TestCheatList() {
+         {Cheat::InfiniteSkillUses, "Infinite Skill Uses",
+          "Prevent equipped skill uses from decreasing when used"},
+         {Cheat::InfiniteGold, "Infinite Gold", "Prevent gold from decreasing when spent"},
++        {Cheat::Score10x, "Score 10x", "Multiply score gains by 10"},
+     };
+     for (size_t i = 0; i < kCheatCount; ++i) { // the final order, in the launcher page and in the F10 menu
+         CHECK(kCheats[i].cheat == expected[i].cheat);
+@@ -114,7 +115,7 @@ void TestCheatList() {
+     CHECK(EnabledCheatsText(0xffffffffu) ==
+           "Infinite Health, Infinite Ally Health, Infinite Mana, Infinite Ally Mana, Infinite Lives, Infinite "
+           "Durability, Infinite Ally Durability, Infinite Arrows, Infinite Skill Points, Infinite Skill Uses, "
+-          "Infinite Gold");
++          "Infinite Gold, Score 10x");
+ }
+ 
+ void TestSessionOverride() {
+@@ -312,7 +313,7 @@ void TestRefillTransitions() {
+ }
+ 
+ void TestMenuModel() {
+-    CHECK(kMenuRows.size() == 20);
++    CHECK(kMenuRows.size() == 23);
+     CHECK(kMenuRows.size() == kCheatCount + kActionCount + 2);
+     CHECK(std::string(kMenuTitle) == "CHEATS");
+     CHECK(std::string(kMenuCloseHint) == "F10 Close");
+@@ -320,9 +321,9 @@ void TestMenuModel() {
+     const char* const order[] = {"Infinite Health",        "Infinite Ally Health", "Fill Health",
+                                  "Fill Ally Health",       "Set Low Health",      "Set Ally Low Health", "Infinite Mana",       "Infinite Ally Mana",  "Infinite Lives",
+                                  "Infinite Durability",    "Infinite Ally Durability", "Infinite Arrows",
+-                                 "Infinite Skill Points",  "Add 100 Skill Points", "Infinite Skill Uses",
+-                                 "Infinite Gold",          "Add 1,000 Gold",      "Level Up (+1 Level)",
+-                                 "Movement Speed",         "Experience Multiplier"};
++                                 "Infinite Skill Points",  "Add 100 Skill Points", "Set Skill Points 99", "Infinite Skill Uses",
++                                 "Infinite Gold",          "Add 1,000 Gold",      "Level Up (+1 Level)", "Set Gold to Max",
++                                 "Score 10x",              "Movement Speed",      "Experience Multiplier"};
+     for (size_t i = 0; i < kMenuRows.size(); ++i) {
+         CHECK(std::string(kMenuRows[i].label) == order[i]);
+     }
+@@ -346,17 +347,24 @@ void TestMenuModel() {
+     CHECK(kMenuRows[12].kind == RowKind::Toggle && kMenuRows[12].cheat == Cheat::InfiniteSkillPoints);
+     CHECK(kMenuRows[13].kind == RowKind::Action && kMenuRows[13].action == Action::AddSkillPoints);
+     CHECK(std::string(kMenuRows[13].verb) == "Add");
+-    CHECK(kMenuRows[14].kind == RowKind::Toggle && kMenuRows[14].cheat == Cheat::InfiniteSkillUses);
+-    CHECK(kMenuRows[15].kind == RowKind::Toggle && kMenuRows[15].cheat == Cheat::InfiniteGold);
+-    CHECK(kMenuRows[16].kind == RowKind::Action && kMenuRows[16].action == Action::AddGold);
+-    CHECK(std::string(kMenuRows[16].verb) == "Add");
+-    CHECK(kMenuRows[17].kind == RowKind::Action && kMenuRows[17].action == Action::AddLevel);
++    CHECK(kMenuRows[14].kind == RowKind::Action && kMenuRows[14].action == Action::SetSkillPoints99);
++    CHECK(std::string(kMenuRows[14].verb) == "Set");
++    CHECK(kMenuRows[15].kind == RowKind::Toggle && kMenuRows[15].cheat == Cheat::InfiniteSkillUses);
++    CHECK(kMenuRows[16].kind == RowKind::Toggle && kMenuRows[16].cheat == Cheat::InfiniteGold);
++    CHECK(kMenuRows[17].kind == RowKind::Action && kMenuRows[17].action == Action::AddGold);
+     CHECK(std::string(kMenuRows[17].verb) == "Add");
+-    CHECK(kMenuRows[18].kind == RowKind::MovementSpeed && std::string(kMenuRows[18].label) == "Movement Speed");
+-    CHECK(kMenuRows[19].kind == RowKind::Experience && std::string(kMenuRows[19].label) == "Experience Multiplier");
++    CHECK(kMenuRows[18].kind == RowKind::Action && kMenuRows[18].action == Action::AddLevel);
++    CHECK(std::string(kMenuRows[18].verb) == "Add");
++    CHECK(kMenuRows[19].kind == RowKind::Action && kMenuRows[19].action == Action::SetGoldMax);
++    CHECK(std::string(kMenuRows[19].verb) == "Set");
++    CHECK(kMenuRows[20].kind == RowKind::Toggle && kMenuRows[20].cheat == Cheat::Score10x);
++    CHECK(kMenuRows[21].kind == RowKind::MovementSpeed && std::string(kMenuRows[21].label) == "Movement Speed");
++    CHECK(kMenuRows[22].kind == RowKind::Experience && std::string(kMenuRows[22].label) == "Experience Multiplier");
+     CHECK(std::string(kActions[0].label) == "Add 100 Skill Points" && kSkillPointsPerAdd == 100);
+     CHECK(std::string(kActions[1].label) == "Add 1,000 Gold" && kGoldPerAdd == 1000);
+     CHECK(std::string(kActions[2].label) == "Level Up (+1 Level)");
++    CHECK(std::string(kActions[7].label) == "Set Skill Points 99");
++    CHECK(std::string(kActions[8].label) == "Set Gold to Max");
+     CHECK(std::string(kActions[3].label) == "Fill Health" && std::string(kActions[4].label) == "Fill Ally Health");
+     CHECK(std::string(kActions[5].label) == "Set Low Health" && std::string(kActions[6].label) == "Set Ally Low Health");
+     for (const CheatInfo& info : kCheats) { // an action is no cheat: nothing saved, nothing in the launcher's list
+@@ -1169,6 +1177,125 @@ void SetSkillPoints(int16_t value) {
+     std::memcpy(g_skill_record + kSkillPointsOffset, &value, sizeof(value));
+ }
+ 
++
++void TestScoreHook() {
++    CHECK(MultipliedScore(100) == 1000);
++    CHECK(MultipliedScore(9999999) == 99999990);
++    CHECK(MultipliedScore(10000000) == kScoreMaximum);
++    CHECK(MultipliedScore(INT32_MAX) == kScoreMaximum);
++
++    runtime_cheats_start(Bit(Cheat::Score10x), 1);
++    GuestRegs regs{};
++    regs.rsi = 100;
++    ScoreHook(&regs);
++    CHECK(regs.rsi == 1000);
++    regs.rsi = 10000000;
++    ScoreHook(&regs);
++    CHECK(regs.rsi == uint64_t(kScoreMaximum));
++    regs.rsi = 0;
++    ScoreHook(&regs);
++    CHECK(regs.rsi == 0); // no gain: unchanged
++    regs.rsi = static_cast<uint64_t>(static_cast<uint32_t>(-50));
++    ScoreHook(&regs);
++    CHECK(static_cast<int32_t>(regs.rsi) == -50); // a loss is not multiplied
++    runtime_cheats_start(0, 1);
++    regs.rsi = 100;
++    ScoreHook(&regs);
++    CHECK(regs.rsi == 100); // off: the game's own behavior
++}
++
++void TestSetGoldMax() {
++    SetGuestFunctions({FakeIsDead, FakeRefillFunction, FakeGoldContext, FakeGetGold, FakeAddGold});
++    FakeGame player1(true, 0), player2(true, 1), enemy(false, 0);
++    runtime_cheats_start(0, 1);
++    const int action = int(Action::SetGoldMax);
++    const auto tick = [](const FakeGame& game) {
++        GuestRegs regs = TickRegs(game);
++        PlayerTickHook(&regs);
++    };
++    const auto press = [&](int32_t before) {
++        g_gold = {};
++        g_gold.gold = before;
++        runtime_cheat_action(action);
++        tick(player1);
++        return g_gold.gold;
++    };
++
++    CHECK(press(100) == kGoldMaximum);
++    CHECK(press(5000) == kGoldMaximum);
++    CHECK(press(0) == kGoldMaximum);
++    CHECK(press(kGoldMaximum - 1) == kGoldMaximum);
++    CHECK(press(kGoldMaximum) == kGoldMaximum && g_gold.calls == 0); // at the maximum: the game is not asked
++    CHECK(press(INT32_MAX) == INT32_MAX && g_gold.calls == 0);
++
++    // One press is one top-up however many ticks follow it.
++    g_gold = {};
++    g_gold.gold = 100;
++    runtime_cheat_action(action);
++    for (int i = 0; i < 120; ++i) {
++        tick(player1);
++    }
++    CHECK(g_gold.gold == kGoldMaximum && g_gold.calls == 1);
++    CHECK(runtime_cheat_action_pending(action) == 0);
++
++    // Only Player 1's unit runs it; the request waits for it.
++    g_gold = {};
++    runtime_cheat_action(action);
++    tick(player2);
++    tick(enemy);
++    CHECK(g_gold.gold == 0);
++    tick(player1);
++    CHECK(g_gold.gold == kGoldMaximum);
++}
++
++void TestSetSkillPoints99() {
++    GuestFunctions functions;
++    functions.gold_context = FakeGoldContext;
++    functions.get_gold = FakeGetGold;
++    functions.add_gold = FakeAddGold;
++    functions.save_record = FakeSaveRecord;
++    SetGuestFunctions(functions);
++    g_skill_record_address = reinterpret_cast<uint64_t>(g_skill_record);
++
++    FakeGame player1(true, 0), player2(true, 1), enemy(false, 0);
++    runtime_cheats_start(0, 1, 1);
++    const int action = int(Action::SetSkillPoints99);
++    const auto tick = [](const FakeGame& game) {
++        GuestRegs regs = TickRegs(game);
++        PlayerTickHook(&regs);
++    };
++    const auto press = [&](int16_t before) {
++        SetSkillPoints(before);
++        runtime_cheat_action(action);
++        tick(player1);
++        return SkillPoints();
++    };
++
++    CHECK(press(0) == 99);
++    CHECK(press(50) == 99);
++    CHECK(press(99) == 99);
++    CHECK(press(200) == 99); // a set, not an addition
++    CHECK(press(INT16_MAX) == 99);
++
++    // One press is one set however many ticks follow it.
++    SetSkillPoints(100);
++    runtime_cheat_action(action);
++    for (int i = 0; i < 120; ++i) {
++        tick(player1);
++    }
++    CHECK(SkillPoints() == 99);
++    CHECK(runtime_cheat_action_pending(action) == 0);
++
++    // Only Player 1's unit runs it; the request waits for it.
++    SetSkillPoints(20);
++    runtime_cheat_action(action);
++    tick(player2);
++    tick(enemy);
++    CHECK(SkillPoints() == 20);
++    tick(player1);
++    CHECK(SkillPoints() == 99);
++}
++
+ void TestAddSkillPoints() {
+     CHECK(kSkillPointsPerAdd == 100 && kSkillPointsMaximum == INT16_MAX);
+     CHECK(SkillPointsIncrease(0) == 100 && SkillPointsAfterAdd(0) == 100);
+@@ -2470,6 +2597,74 @@ void TestHookTable() {
      }
  }
  
 +void TestAsia100HookTable() {
 +    const std::span<const GuestHook> hooks = HooksAsia100();
-+    CHECK(hooks.size() == 23);
++    CHECK(hooks.size() == 24);
 +    CHECK(kAsia100Image.size == 0x1238060 && kAsia100Image.entry == 0x54a790);
 +    for (const GuestHook& hook : hooks) {
 +        CHECK(hook.length >= GUEST_HOOK_MIN_LENGTH && hook.length <= GUEST_HOOK_MAX_LENGTH);
@@ -491,7 +959,7 @@ index 2f32df9..a78233d 100644
  // A hook whose bytes do not match is skipped on its own; the others install. A wrong image installs nothing.
  void TestPartialInstall() {
      const std::span<const GuestHook> hooks = Hooks();
-@@ -2535,10 +2603,17 @@ int CheckImage(const char* path) {
+@@ -2535,10 +2730,17 @@ int CheckImage(const char* path) {
          std::printf("truncated boot image\n");
          return 2;
      }
@@ -511,7 +979,7 @@ index 2f32df9..a78233d 100644
      std::printf("image 0x%llx entry 0x%llx: %s%s%s\n", static_cast<unsigned long long>(size),
                  static_cast<unsigned long long>(entry), guest_hook_status_text(status), status ? " at " : "",
                  status ? hooks[bad].name : "");
-@@ -2546,45 +2621,34 @@ int CheckImage(const char* path) {
+@@ -2546,45 +2748,34 @@ int CheckImage(const char* path) {
          return 1;
      }
      // The game functions the refills, Add 1,000 Gold and the durability refill call start as the runtime expects.
@@ -577,7 +1045,7 @@ index 2f32df9..a78233d 100644
              std::printf("the level functions differ at 0x%llx\n", static_cast<unsigned long long>(function.offset));
              return 1;
          }
-@@ -2593,7 +2657,7 @@ int CheckImage(const char* path) {
+@@ -2593,7 +2784,7 @@ int CheckImage(const char* path) {
      const size_t room = hooks.size() * guest_hook_stub_size();
      std::vector<uint8_t> copy(size + room);
      std::memcpy(copy.data(), image.data(), size);
@@ -586,7 +1054,13 @@ index 2f32df9..a78233d 100644
                              room, &bad) != GUEST_HOOK_OK) {
          std::printf("installation failed\n");
          return 1;
-@@ -3013,6 +3077,7 @@ int main(int argc, char** argv) {
+@@ -3010,9 +3201,13 @@ int main(int argc, char** argv) {
+     TestLives();
+     TestGold();
+     TestAddGold();
++    TestSetGoldMax();
++    TestSetSkillPoints99();
++    TestScoreHook();
      TestMenuInput();
      TestMovement();
      TestHookTable();
